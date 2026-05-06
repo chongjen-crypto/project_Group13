@@ -26,17 +26,19 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    background-color: #f5f5f5;
+
+    background: url('assets/facilities-page-banner-1.webp') no-repeat center center/cover;
 }
 
 .title {
-    font-size: 50px;
+    font-size: 40px;
     font-weight: bold;
+    color: black;
 }
 
 .subtitle {
-    margin-bottom: 30px;
-    color: #555;
+    margin-bottom: 25px;
+    color: #666;
 }
 
 .login-box {
@@ -109,10 +111,12 @@ body {
 
 <div class="text-center">
 
-    <div class="title">Scholar Hub</div>
-    <div class="subtitle">Sport Facility Booking System</div>
-
     <div class="login-box">
+
+        <!-- Title inside box -->
+        <div class="title mb-2">Scholar Hub</div>
+        <div class="subtitle">Sport Facility Booking System</div>
+        <hr>
         <?php if ($error): ?>
             <p style="color:red;">* <?php echo $error; ?></p>
         <?php endif; ?>
@@ -139,7 +143,7 @@ body {
 
             <!-- Password -->
             <div class="mb-3 password-wrapper">
-                <input type="password" name="password" class="form-control" placeholder="Password" required>
+                <input type="password" id="password" name="password" class="form-control" placeholder="Password" required>
                 <span class="toggle-password" onclick="togglePassword()">
                 <i class="bi bi-eye" id="eyeIcon"></i>
                 </span>
