@@ -1,3 +1,15 @@
+<?php
+$error = "";
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $email = $_POST['email'];
+
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = "Invalid email format";
+    }
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -81,6 +93,15 @@ body {
     cursor: pointer;
     font-size: 18px;
 }
+.forgot-link {
+    color: #0d6efd; /* blue */
+    font-size: 14px;
+    text-decoration: none;
+}
+
+.forgot-link:hover {
+    text-decoration: underline;
+}
 </style>
 </head>
 
@@ -92,8 +113,11 @@ body {
     <div class="subtitle">Sport Facility Booking System</div>
 
     <div class="login-box">
+        <?php if ($error): ?>
+            <p style="color:red;">* <?php echo $error; ?></p>
+        <?php endif; ?>
 
-        <form>
+        <form method="POST" >
 
             <!-- Role Selection -->
             <div class="role-container">
@@ -103,16 +127,19 @@ body {
             </div>
 
             <!-- Hidden input (important for backend later) -->
-            <input type="hidden" id="role" value="student">
+            <input type="hidden" id="role" name="role" value="student">
 
             <!-- Email -->
             <div class="mb-3">
-                <input type="email" class="form-control" placeholder="Email" required>
+                <input type="email" id="email" name="email" class="form-control" placeholder="Email" required>
+                <small id="emailError" class="text-danger" style="display:none;">
+                * Please enter a valid email
+                </small>
             </div>
 
             <!-- Password -->
             <div class="mb-3 password-wrapper">
-                <input type="password" id="password" class="form-control" placeholder="Password" required>
+                <input type="password" name="password" class="form-control" placeholder="Password" required>
                 <span class="toggle-password" onclick="togglePassword()">
                 <i class="bi bi-eye" id="eyeIcon"></i>
                 </span>
@@ -120,9 +147,12 @@ body {
 
             <!-- Button -->
             <div class="d-grid">
-                <button class="btn btn-black">Login</button>
+                <button type="submit" class="btn btn-black">Login</button>
             </div>
 
+            <div class="text-end mt-2">
+                <a href="forgot_password.php" class="forgot-link">Forgot Password?</a>
+            </div>
         </form>
 
     </div>
@@ -136,6 +166,20 @@ function selectRole(element, role) {
     element.classList.add('active');
     document.getElementById('role').value = role;
 }
+
+document.querySelector("form").addEventListener("submit", function(e) {
+    const email = document.getElementById("email").value;
+    const error = document.getElementById("emailError");
+
+    const emailPattern = /^[^ ]+@[^ ]+\.[a-z]{2,3}$/;
+
+    if (!email.match(emailPattern)) {
+        e.preventDefault(); // stop form submit
+        error.style.display = "block";
+    } else {
+        error.style.display = "none";
+    }
+});
 
 // Password toggle (eye icon)
 function togglePassword() {
