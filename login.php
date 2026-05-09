@@ -1,11 +1,54 @@
 <?php
+
+require 'db.php';
+
 $error = "";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $email = $_POST['email'];
 
+    $role = $_POST['role'];
+    $email = $_POST['email'];
+    $password = $_POST['password'];
+
+    // Email validation
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+
         $error = "Invalid email format";
+
+    } else {
+
+        // Check user in database
+        $sql = "SELECT * FROM users 
+                WHERE role='$role' 
+                AND email='$email' 
+                AND password='$password'";
+
+        $result = mysqli_query($conn, $sql);
+
+        // Login success
+        if (mysqli_num_rows($result) > 0) {
+
+            // Redirect based on role
+            if ($role == "student") {
+
+                header("Location: student_dashboard.php");
+                exit();
+
+            } elseif ($role == "staff") {
+
+                header("Location: staff_dashboard.php");
+                exit();
+
+            } elseif ($role == "admin") {
+
+                header("Location: admin_dashboard.php");
+                exit();
+            }
+
+        } else {
+
+            $error = "Invalid email or password";
+        }
     }
 }
 ?>
