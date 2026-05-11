@@ -357,6 +357,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <span class="text-muted">Already have an account? </span>
                 <a href="login.php" class="text-primary text-link">Login</a>
             </div>
+
+            <!-- Staff Registration Link (bottom-right) -->
+            <div class="text-end mt-2">
+                <a href="staff_registration.php" class="text-primary text-link" style="font-size: 0.9rem;">
+                    Staff registration
+                </a>
+            </div>
         </form>
     </div>
 </div>
