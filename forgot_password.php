@@ -117,12 +117,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $mail->isSMTP();
                             $mail->Host = 'smtp.gmail.com';
                             $mail->SMTPAuth = true;
-                            $mail->Username = 'YOUR_EMAIL@gmail.com';
-                            $mail->Password = 'YOUR_APP_PASSWORD';
+                            $mail->Username = 'kuangkaize@gmail.com';
+                            $mail->Password = 'fryuizoyslpdftvr';
                             $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
                             $mail->Port = 587;
 
-                            $mail->setFrom('YOUR_EMAIL@gmail.com', 'Scholar Hub');
+                            $mail->setFrom('kuangkaize@gmail.com', 'Scholar Hub');
                             $mail->addAddress($input_email);
 
                             $mail->isHTML(false);
