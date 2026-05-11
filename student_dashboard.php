@@ -1,3 +1,16 @@
+<?php
+
+session_start();
+
+// If not logged in
+if (!isset($_SESSION['email'])) {
+
+    header("Location: login.php");
+    exit();
+}
+
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -44,8 +57,8 @@ body {
             Scholar Hub - Student Dashboard
         </span>
 
-        <a href="login.php" class="btn btn-light">
-            Logout
+        <a href="logout.php" class="btn btn-light">
+        Logout
         </a>
 
     </div>

@@ -1,14 +1,42 @@
 <?php
 
+session_start();
+
 require 'db.php';
+
+// If already logged in
+if (isset($_SESSION['role'])) {
+
+    if ($_SESSION['role'] == "student") {
+        header("Location: student_dashboard.php");
+        exit();
+    }
+
+    if ($_SESSION['role'] == "staff") {
+        header("Location: staff_dashboard.php");
+        exit();
+    }
+
+    if ($_SESSION['role'] == "admin") {
+        header("Location: admin_dashboard.php");
+        exit();
+    }
+}
 
 $error = "";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
-    $role = $_POST['role'];
-    $email = $_POST['email'];
-    $password = $_POST['password'];
+    // Get and trim form values
+    $role = trim($_POST['role'] ?? 'student');
+    $email = trim($_POST['email'] ?? '');
+    $password = $_POST['password'] ?? '';
+
+    // Allow only valid roles from the UI (student/staff/admin)
+    $allowed_roles = ['student', 'staff', 'admin'];
+    if (!in_array($role, $allowed_roles, true)) {
+        $role = 'student';
+    }
 
     // Email validation
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -17,40 +45,80 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     } else {
 
-        // Check user in database
-        $sql = "SELECT * FROM users 
-                WHERE role='$role' 
-                AND email='$email' 
-                AND password='$password'";
+        // Check user in database (securely) and verify password hash
+        $sql = "SELECT id, role, email, full_name, password FROM users WHERE role = ? AND email = ? LIMIT 1";
+        $stmt = mysqli_prepare($conn, $sql);
 
-        $result = mysqli_query($conn, $sql);
-
-        // Login success
-        if (mysqli_num_rows($result) > 0) {
-
-            // Redirect based on role
-            if ($role == "student") {
-
-                header("Location: student_dashboard.php");
-                exit();
-
-            } elseif ($role == "staff") {
-
-                header("Location: staff_dashboard.php");
-                exit();
-
-            } elseif ($role == "admin") {
-
-                header("Location: admin_dashboard.php");
-                exit();
-            }
-
+        if (!$stmt) {
+            $error = "Database error. Please try again.";
         } else {
+            mysqli_stmt_bind_param($stmt, "ss", $role, $email);
+            mysqli_stmt_execute($stmt);
+            $result = mysqli_stmt_get_result($stmt);
+            $user = $result ? mysqli_fetch_assoc($result) : null;
+            mysqli_stmt_close($stmt);
 
-            $error = "Invalid email or password";
+            if (!$user) {
+                $error = "Invalid email or password";
+            } else {
+                $stored_password = $user['password'];
+
+                // If password is hashed (recommended), verify using password_verify().
+                // If some old accounts were saved as plain text, allow one-time login and upgrade to hash.
+                $info = password_get_info($stored_password);
+                $password_ok = false;
+                $needs_upgrade_hash = false;
+
+                if ($info['algo'] !== 0) {
+                    $password_ok = password_verify($password, $stored_password);
+                } else {
+                    // Plain-text legacy password (not recommended). Upgrade it after successful login.
+                    $password_ok = hash_equals($stored_password, $password);
+                    $needs_upgrade_hash = $password_ok;
+                }
+
+                if (!$password_ok) {
+                    $error = "Invalid email or password";
+                } else {
+                    // Upgrade legacy plain-text password to hashed password
+                    if ($needs_upgrade_hash) {
+                        $new_hash = password_hash($password, PASSWORD_DEFAULT);
+                        $update_sql = "UPDATE users SET password = ? WHERE id = ?";
+                        $update_stmt = mysqli_prepare($conn, $update_sql);
+                        if ($update_stmt) {
+                            mysqli_stmt_bind_param($update_stmt, "si", $new_hash, $user['id']);
+                            mysqli_stmt_execute($update_stmt);
+                            mysqli_stmt_close($update_stmt);
+                        }
+                    }
+
+                    // Store session
+                    $_SESSION['user_id'] = $user['id'];
+                    $_SESSION['role'] = $user['role'];
+                    $_SESSION['email'] = $user['email'];
+                    $_SESSION['full_name'] = $user['full_name'];
+
+                    // Redirect based on role
+                    switch ($role) {
+
+                        case "student":
+                            header("Location: student_dashboard.php");
+                            exit();
+
+                        case "staff":
+                            header("Location: staff_dashboard.php");
+                            exit();
+
+                        case "admin":
+                            header("Location: admin_dashboard.php");
+                            exit();
+                    }
+                }
+            }
         }
     }
 }
+
 ?>
 
 <!DOCTYPE html>
@@ -179,7 +247,7 @@ body {
 
         <!-- Error Message -->
         <?php if ($error): ?>
-            <p style="color:red;">* <?php echo $error; ?></p>
+            <p style="color:red;">* <?php echo htmlspecialchars($error); ?></p>
         <?php endif; ?>
 
         <form method="POST">
