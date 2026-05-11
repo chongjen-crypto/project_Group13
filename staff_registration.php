@@ -9,8 +9,23 @@ require 'db.php';
 // Secret staff registration code (server-side enforced)
 $STAFF_REGISTRATION_CODE = 'JOINSTAFF67';
 
+// How long the verification is valid (seconds)
+$STAFF_CODE_TTL_SECONDS = 300; // 5 minutes
+
+// Reset verification (optional)
+if (isset($_GET['reset']) && $_GET['reset'] === '1') {
+    unset($_SESSION['staff_code_verified'], $_SESSION['staff_code_verified_at']);
+}
+
 // Page state
 $code_verified = $_SESSION['staff_code_verified'] ?? false;
+$verified_at = $_SESSION['staff_code_verified_at'] ?? 0;
+
+// Expire verification after TTL
+if ($code_verified && (time() - (int)$verified_at) > $STAFF_CODE_TTL_SECONDS) {
+    $code_verified = false;
+    unset($_SESSION['staff_code_verified'], $_SESSION['staff_code_verified_at']);
+}
 $code_error = '';
 
 $full_name = $staff_id = $email = $phone = '';
@@ -29,10 +44,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($input_code === $STAFF_REGISTRATION_CODE) {
             $_SESSION['staff_code_verified'] = true;
+            $_SESSION['staff_code_verified_at'] = time();
+            // Prevent session fixation after a privileged step
+            session_regenerate_id(true);
             $code_verified = true;
         } else {
             $code_error = 'Invalid staff registration code';
             $_SESSION['staff_code_verified'] = false;
+            unset($_SESSION['staff_code_verified_at']);
             $code_verified = false;
         }
     }
@@ -43,8 +62,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'register_staff') {
         // IMPORTANT: enforce verification on the server
         $code_verified = $_SESSION['staff_code_verified'] ?? false;
-        if (!$code_verified) {
+        $verified_at = $_SESSION['staff_code_verified_at'] ?? 0;
+        $is_expired = (!$verified_at) || ((time() - (int)$verified_at) > $STAFF_CODE_TTL_SECONDS);
+
+        if (!$code_verified || $is_expired) {
             $code_error = 'Invalid staff registration code';
+            unset($_SESSION['staff_code_verified'], $_SESSION['staff_code_verified_at']);
         } else {
             // Get and trim form values
             $full_name  = trim($_POST['full_name'] ?? '');
@@ -124,6 +147,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             // Clear form values
                             $full_name = $staff_id = $email = $phone = '';
                             $success_message = 'Registration successful! Redirecting to login page...';
+
+                            // Clear verification immediately after successful staff registration
+                            unset($_SESSION['staff_code_verified'], $_SESSION['staff_code_verified_at']);
                         } else {
                             $errors['general'] = 'Registration failed. Please try again.';
                         }
@@ -303,6 +329,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <div class="text-center mt-3">
                     <a href="login.php" class="text-primary text-link">Back to Login</a>
+                </div>
+
+                <div class="text-center mt-2">
+                    <a href="staff_registration.php?reset=1" class="text-muted text-link" style="font-size: 0.9rem;">
+                        Reset code verification
+                    </a>
                 </div>
             </form>
         </div>
