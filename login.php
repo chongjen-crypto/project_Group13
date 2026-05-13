@@ -144,7 +144,7 @@ body {
 
     background:
         linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)),
-        url('assets/bg.png') no-repeat center center/cover;
+        url('assets/trackfield.webp') no-repeat center center/cover;
 }
 
 /* Login Box */

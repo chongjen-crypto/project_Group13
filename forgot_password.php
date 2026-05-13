@@ -268,7 +268,7 @@ unset($_SESSION['fp_redirect_login']);
             min-height: 100vh;
             margin: 0;
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            background: url('assets/bg.png') center center / cover no-repeat fixed;
+            background: url('assets/trackfield.webp') center center / cover no-repeat fixed;
             position: relative;
             color: #212529;
         }

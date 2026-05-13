@@ -31,63 +31,63 @@ $facilities = [
         'desc' => 'Indoor air-conditioned court',
         'status' => 'Available',
         'status_class' => 'bg-success',
-        'icon' => 'bi bi-badminton',
+        'image' => 'assets/badmintoncourt.webp',
     ],
     [
         'name' => 'Tennis Court',
         'desc' => 'Outdoor hard court with lighting',
         'status' => 'Limited Slots',
         'status_class' => 'bg-warning text-dark',
-        'icon' => 'bi bi-circle',
+        'image' => 'assets/tenniscourt.jpg',
     ],
     [
         'name' => 'Swimming Pool',
         'desc' => 'Olympic-size swimming pool',
         'status' => 'Available',
         'status_class' => 'bg-success',
-        'icon' => 'bi bi-water',
+        'image' => 'assets/swimmingpool.jpg',
     ],
     [
         'name' => 'Gym Room',
         'desc' => 'Modern gym equipment',
         'status' => 'Maintenance',
         'status_class' => 'bg-danger',
-        'icon' => 'bi bi-heart-pulse',
+        'image' => 'assets/gymroom.jpg',
     ],
     [
         'name' => 'Track Field',
         'desc' => '400m synthetic running track',
         'status' => 'Available',
         'status_class' => 'bg-success',
-        'icon' => 'bi bi-flag',
+        'image' => 'assets/trackfield.webp',
     ],
     [
         'name' => 'Volleyball Court',
         'desc' => 'Sand and indoor options',
         'status' => 'Limited Slots',
         'status_class' => 'bg-warning text-dark',
-        'icon' => 'bi bi-globe2',
+        'image' => 'assets/volleyballcourt.webp',
     ],
     [
         'name' => 'Basketball Court',
         'desc' => 'Full-size indoor court',
         'status' => 'Available',
         'status_class' => 'bg-success',
-        'icon' => 'bi bi-dribbble',
+        'image' => 'assets/basketballcourt.jpeg',
     ],
     [
         'name' => 'Snooker Room',
         'desc' => 'Quiet room with professional tables',
         'status' => 'Available',
         'status_class' => 'bg-success',
-        'icon' => 'bi bi-circle-half',
+        'image' => 'assets/snookerroom.jpg',
     ],
     [
         'name' => 'Futsal Court',
         'desc' => 'Indoor 5-a-side pitch',
         'status' => 'Maintenance',
         'status_class' => 'bg-danger',
-        'icon' => 'bi bi-hexagon',
+        'image' => 'assets/futsalcourt.jpg',
     ],
 ];
 
@@ -344,16 +344,24 @@ $recent_bookings = [
             margin: 0;
         }
 
-        /* Facility cards */
+        /* Facility cards — real photos from /assets */
         .facility-img {
-            height: 140px;
-            background: linear-gradient(135deg, #e5e7eb 0%, #f9fafb 50%, #d1d5db 100%);
+            height: 160px;
             border-radius: var(--card-radius) var(--card-radius) 0 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #9ca3af;
-            font-size: 2.5rem;
+            overflow: hidden;
+            background: #e5e7eb;
+        }
+
+        .facility-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            transition: transform 0.35s ease;
+        }
+
+        .card-soft:hover .facility-img img {
+            transform: scale(1.06);
         }
 
         .facility-body {
@@ -551,7 +559,11 @@ $recent_bookings = [
             <div class="col-12 col-sm-6 col-lg-4">
                 <div class="card-soft overflow-hidden h-100">
                     <div class="facility-img">
-                        <i class="<?php echo htmlspecialchars($f['icon'], ENT_QUOTES, 'UTF-8'); ?>"></i>
+                        <img
+                            src="<?php echo htmlspecialchars($f['image'], ENT_QUOTES, 'UTF-8'); ?>"
+                            alt="<?php echo htmlspecialchars($f['name'], ENT_QUOTES, 'UTF-8'); ?>"
+                            loading="lazy"
+                        >
                     </div>
                     <div class="facility-body">
                         <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
