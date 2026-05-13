@@ -32,6 +32,7 @@ $facilities = [
         'status' => 'Available',
         'status_class' => 'bg-success',
         'image' => 'assets/badmintoncourt.webp',
+        'detail_url' => 'badminton.php',
     ],
     [
         'name' => 'Tennis Court',
@@ -39,6 +40,7 @@ $facilities = [
         'status' => 'Limited Slots',
         'status_class' => 'bg-warning text-dark',
         'image' => 'assets/tenniscourt.jpg',
+        'detail_url' => 'tennis.php',
     ],
     [
         'name' => 'Swimming Pool',
@@ -46,6 +48,7 @@ $facilities = [
         'status' => 'Available',
         'status_class' => 'bg-success',
         'image' => 'assets/swimmingpool.jpg',
+        'detail_url' => 'swimming_pool.php',
     ],
     [
         'name' => 'Gym Room',
@@ -53,6 +56,7 @@ $facilities = [
         'status' => 'Maintenance',
         'status_class' => 'bg-danger',
         'image' => 'assets/gymroom.jpg',
+        'detail_url' => 'gym_room.php',
     ],
     [
         'name' => 'Track Field',
@@ -60,6 +64,7 @@ $facilities = [
         'status' => 'Available',
         'status_class' => 'bg-success',
         'image' => 'assets/trackfield.webp',
+        'detail_url' => 'track_field.php',
     ],
     [
         'name' => 'Volleyball Court',
@@ -67,6 +72,7 @@ $facilities = [
         'status' => 'Limited Slots',
         'status_class' => 'bg-warning text-dark',
         'image' => 'assets/volleyballcourt.webp',
+        'detail_url' => 'volleyball_court.php',
     ],
     [
         'name' => 'Basketball Court',
@@ -74,6 +80,7 @@ $facilities = [
         'status' => 'Available',
         'status_class' => 'bg-success',
         'image' => 'assets/basketballcourt.jpeg',
+        'detail_url' => 'basketball_court.php',
     ],
     [
         'name' => 'Snooker Room',
@@ -81,6 +88,7 @@ $facilities = [
         'status' => 'Available',
         'status_class' => 'bg-success',
         'image' => 'assets/snookerroom.jpg',
+        'detail_url' => 'snooker_room.php',
     ],
     [
         'name' => 'Futsal Court',
@@ -88,6 +96,7 @@ $facilities = [
         'status' => 'Maintenance',
         'status_class' => 'bg-danger',
         'image' => 'assets/futsalcourt.jpg',
+        'detail_url' => 'futsal.php',
     ],
 ];
 
@@ -364,6 +373,16 @@ $recent_bookings = [
             transform: scale(1.06);
         }
 
+        /* Whole facility card links to detail page */
+        a.facility-card-link {
+            color: inherit;
+            text-decoration: none;
+        }
+        a.facility-card-link:focus-visible {
+            outline: 3px solid #0d6efd;
+            outline-offset: 2px;
+        }
+
         .facility-body {
             padding: 1rem 1.1rem 1.15rem;
         }
@@ -557,27 +576,29 @@ $recent_bookings = [
         <div class="row g-3 mb-4">
             <?php foreach ($facilities as $f): ?>
             <div class="col-12 col-sm-6 col-lg-4">
-                <div class="card-soft overflow-hidden h-100">
-                    <div class="facility-img">
-                        <img
-                            src="<?php echo htmlspecialchars($f['image'], ENT_QUOTES, 'UTF-8'); ?>"
-                            alt="<?php echo htmlspecialchars($f['name'], ENT_QUOTES, 'UTF-8'); ?>"
-                            loading="lazy"
-                        >
-                    </div>
-                    <div class="facility-body">
-                        <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
-                            <h6><?php echo htmlspecialchars($f['name'], ENT_QUOTES, 'UTF-8'); ?></h6>
-                            <span class="badge <?php echo htmlspecialchars($f['status_class'], ENT_QUOTES, 'UTF-8'); ?> rounded-pill" style="font-size: 0.65rem;">
-                                <?php echo htmlspecialchars($f['status'], ENT_QUOTES, 'UTF-8'); ?>
+                <a href="<?php echo htmlspecialchars($f['detail_url'], ENT_QUOTES, 'UTF-8'); ?>" class="facility-card-link d-block h-100">
+                    <div class="card-soft overflow-hidden h-100">
+                        <div class="facility-img">
+                            <img
+                                src="<?php echo htmlspecialchars($f['image'], ENT_QUOTES, 'UTF-8'); ?>"
+                                alt="<?php echo htmlspecialchars($f['name'], ENT_QUOTES, 'UTF-8'); ?>"
+                                loading="lazy"
+                            >
+                        </div>
+                        <div class="facility-body">
+                            <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
+                                <h6><?php echo htmlspecialchars($f['name'], ENT_QUOTES, 'UTF-8'); ?></h6>
+                                <span class="badge <?php echo htmlspecialchars($f['status_class'], ENT_QUOTES, 'UTF-8'); ?> rounded-pill" style="font-size: 0.65rem;">
+                                    <?php echo htmlspecialchars($f['status'], ENT_QUOTES, 'UTF-8'); ?>
+                                </span>
+                            </div>
+                            <p><?php echo htmlspecialchars($f['desc'], ENT_QUOTES, 'UTF-8'); ?></p>
+                            <span class="btn btn-dark w-100 btn-book d-inline-flex align-items-center justify-content-center">
+                                <i class="bi bi-calendar-check me-1"></i> Book Now
                             </span>
                         </div>
-                        <p><?php echo htmlspecialchars($f['desc'], ENT_QUOTES, 'UTF-8'); ?></p>
-                        <button type="button" class="btn btn-dark w-100 btn-book">
-                            <i class="bi bi-calendar-check me-1"></i> Book Now
-                        </button>
                     </div>
-                </div>
+                </a>
             </div>
             <?php endforeach; ?>
         </div>
