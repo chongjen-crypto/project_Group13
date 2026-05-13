@@ -106,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <!-- Meta tags -->
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Scholar Hub - Register</title>
 
     <!-- Bootstrap 5 CSS -->
@@ -117,13 +117,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <!-- Custom CSS (inline for single-file requirement) -->
     <style>
+        html {
+            overflow-x: hidden;
+        }
+
         body {
             min-height: 100vh;
+            min-height: 100dvh;
             margin: 0;
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             background: url('assets/trackfield.webp') center center / cover no-repeat fixed;
             position: relative;
             color: #212529;
+            overflow-x: hidden;
+        }
+
+        @media (max-width: 767.98px) {
+            body {
+                background-attachment: scroll;
+            }
         }
 
         /* Dark overlay over background image */
@@ -139,25 +151,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             position: relative;
             z-index: 1;
             min-height: 100vh;
+            min-height: 100dvh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 1.5rem;
+            padding: max(0.75rem, env(safe-area-inset-top)) max(0.65rem, env(safe-area-inset-right)) max(0.75rem, env(safe-area-inset-bottom)) max(0.65rem, env(safe-area-inset-left));
+            box-sizing: border-box;
         }
 
         .register-card {
             background-color: #ffffff;
             border-radius: 1rem;
             box-shadow: 0 18px 45px rgba(0, 0, 0, 0.25);
-            max-width: 480px;
+            max-width: min(480px, 100%);
             width: 100%;
-            padding: 2.25rem 2rem;
+            padding: clamp(1.15rem, 3.5vw, 2.25rem) clamp(1rem, 3vw, 2rem);
+            box-sizing: border-box;
         }
 
         @media (min-width: 768px) {
             .register-card {
-                padding: 2.75rem 2.5rem;
+                padding: clamp(1.75rem, 2.5vw, 2.75rem) clamp(1.5rem, 2.5vw, 2.5rem);
             }
+        }
+
+        .register-card .app-title {
+            font-size: clamp(1.2rem, 3.8vw, 1.75rem) !important;
+            line-height: 1.2;
         }
 
         .app-title {
@@ -212,6 +232,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         .error-text {
             font-size: 0.8rem;
+        }
+
+        /* iOS: avoid auto-zoom on focus when font would be < 16px */
+        @media (max-width: 575.98px) {
+            .form-control,
+            .form-select {
+                font-size: 16px;
+            }
         }
     </style>
 </head>

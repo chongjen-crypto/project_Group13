@@ -125,7 +125,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Scholar Hub</title>
 
 <!-- Bootstrap -->
@@ -136,56 +136,88 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 <style>
 
+/* ---- Global: prevent horizontal scroll on narrow phones ---- */
+html {
+    overflow-x: hidden;
+}
+
 body {
-    height: 100vh;
+    min-height: 100vh;
+    min-height: 100dvh;
+    margin: 0;
     display: flex;
     justify-content: center;
     align-items: center;
+    padding: max(1rem, env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(0.75rem, env(safe-area-inset-left));
+    overflow-x: hidden;
+    box-sizing: border-box;
 
     background:
         linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)),
         url('assets/trackfield.webp') no-repeat center center/cover;
+    background-attachment: fixed;
 }
 
-/* Login Box */
+/* iOS / mobile: fixed backgrounds can jitter; scroll attachment is smoother */
+@media (max-width: 767.98px) {
+    body {
+        background-attachment: scroll;
+        align-items: flex-start;
+        padding-top: max(1.25rem, env(safe-area-inset-top));
+    }
+}
+
+/* Login Box — fluid width, scales on phones / tablets / desktops */
 .login-box {
     background: white;
-    padding: 50px;
-    border-radius: 20px;
+    width: 100%;
+    max-width: min(32rem, 100%);
+    margin: 0 auto;
+    padding: clamp(1.25rem, 4vw, 2.75rem);
+    border-radius: clamp(14px, 2vw, 20px);
     box-shadow: 0 6px 20px rgba(0,0,0,0.2);
-    width: 500px;
-    margin: auto;
+    box-sizing: border-box;
 }
 
-/* Title */
+/* Title — fluid typography */
 .title {
-    font-size: 40px;
+    font-size: clamp(1.65rem, 5vw, 2.5rem);
     font-weight: bold;
     color: black;
     text-align: center;
+    line-height: 1.15;
+    word-wrap: break-word;
 }
 
 .subtitle {
-    margin-bottom: 25px;
+    margin-bottom: 1.25rem;
     color: #666;
     text-align: center;
+    font-size: clamp(0.875rem, 2.5vw, 1rem);
 }
 
-/* Role Selection */
+/* Role Selection — wraps on very small screens */
 .role-container {
     display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
 }
 
 .role-box {
-    flex: 1;
-    padding: 10px;
+    flex: 1 1 calc(33.333% - 0.35rem);
+    min-width: 5rem;
+    min-height: 2.75rem;
+    padding: 0.5rem 0.35rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     text-align: center;
     border-radius: 10px;
     border: 1px solid #ccc;
     cursor: pointer;
     transition: 0.3s;
+    font-size: clamp(0.75rem, 2.2vw, 0.95rem);
 }
 
 .role-box.active {
@@ -198,6 +230,8 @@ body {
 .btn-black {
     background-color: black;
     color: white;
+    min-height: 2.75rem;
+    border-radius: 10px;
 }
 
 .btn-black:hover {
@@ -217,6 +251,12 @@ body {
     transform: translateY(-50%);
     cursor: pointer;
     font-size: 18px;
+    padding: 0.35rem;
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* Links */
@@ -230,12 +270,18 @@ body {
     text-decoration: underline;
 }
 
+@media (max-width: 575.98px) {
+    .form-control {
+        font-size: 16px;
+    }
+}
+
 </style>
 </head>
 
 <body>
 
-<div class="text-center">
+<div class="text-center w-100 mx-auto" style="max-width: 100%;">
 
     <div class="login-box">
 

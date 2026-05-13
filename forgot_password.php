@@ -255,7 +255,7 @@ unset($_SESSION['fp_redirect_login']);
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Scholar Hub - Forgot Password</title>
 
     <!-- Bootstrap 5 -->
@@ -264,13 +264,20 @@ unset($_SESSION['fp_redirect_login']);
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
     <style>
+        html { overflow-x: hidden; }
+
         body {
             min-height: 100vh;
+            min-height: 100dvh;
             margin: 0;
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             background: url('assets/trackfield.webp') center center / cover no-repeat fixed;
             position: relative;
             color: #212529;
+            overflow-x: hidden;
+        }
+        @media (max-width: 767.98px) {
+            body { background-attachment: scroll; }
         }
         body::before {
             content: '';
@@ -284,22 +291,29 @@ unset($_SESSION['fp_redirect_login']);
             position: relative;
             z-index: 1;
             min-height: 100vh;
+            min-height: 100dvh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 1.5rem;
+            padding: max(0.75rem, env(safe-area-inset-top)) max(0.65rem, env(safe-area-inset-right)) max(0.75rem, env(safe-area-inset-bottom)) max(0.65rem, env(safe-area-inset-left));
+            box-sizing: border-box;
         }
 
         .card-box {
             background: #fff;
             border-radius: 1rem;
             box-shadow: 0 18px 45px rgba(0, 0, 0, 0.25);
-            max-width: 520px;
+            max-width: min(520px, 100%);
             width: 100%;
-            padding: 2.25rem 2rem;
+            padding: clamp(1.15rem, 3.5vw, 2.25rem) clamp(1rem, 3vw, 2rem);
+            box-sizing: border-box;
         }
         @media (min-width: 768px) {
-            .card-box { padding: 2.75rem 2.5rem; }
+            .card-box { padding: clamp(1.75rem, 2.5vw, 2.75rem) clamp(1.5rem, 2.5vw, 2.5rem); }
+        }
+
+        .card-box .app-title {
+            font-size: clamp(1.2rem, 3.8vw, 1.75rem) !important;
         }
 
         .app-title {
@@ -369,6 +383,10 @@ unset($_SESSION['fp_redirect_login']);
         }
         @keyframes spin {
             to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 575.98px) {
+            .form-control { font-size: 16px; }
         }
     </style>
 </head>

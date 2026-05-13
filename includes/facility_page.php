@@ -45,7 +45,7 @@ $page_title = h($name) . ' — Scholar Hub';
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title><?php echo $page_title; ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
@@ -56,10 +56,15 @@ $page_title = h($name) . ' — Scholar Hub';
             --card-radius: 16px;
             --t: 0.25s ease;
         }
+        html {
+            overflow-x: hidden;
+        }
         body {
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             background: var(--sh-gray);
             min-height: 100vh;
+            min-height: 100dvh;
+            overflow-x: hidden;
         }
         .top-bar {
             background: #fff;
@@ -68,6 +73,7 @@ $page_title = h($name) . ' — Scholar Hub';
             top: 0;
             z-index: 1020;
             box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+            padding-top: env(safe-area-inset-top);
         }
         .btn-back {
             border-radius: 10px;
@@ -81,7 +87,7 @@ $page_title = h($name) . ' — Scholar Hub';
         /* Gradient hero + facility image */
         .facility-hero {
             position: relative;
-            min-height: 280px;
+            min-height: clamp(200px, 42vw, 320px);
             border-radius: var(--card-radius);
             overflow: hidden;
             box-shadow: 0 12px 40px rgba(0,0,0,0.15);
@@ -102,15 +108,17 @@ $page_title = h($name) . ' — Scholar Hub';
             transform: scale(1.02);
             transition: transform 0.6s ease;
         }
-        .facility-hero:hover .facility-hero-bg {
-            transform: scale(1.06);
+        @media (hover: hover) {
+            .facility-hero:hover .facility-hero-bg {
+                transform: scale(1.06);
+            }
         }
         .facility-hero-content {
             position: relative;
             z-index: 2;
             color: #fff;
-            padding: 2.25rem 1.75rem;
-            min-height: 280px;
+            padding: clamp(1.25rem, 4vw, 2.25rem) clamp(1rem, 3vw, 1.75rem);
+            min-height: clamp(200px, 42vw, 320px);
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
@@ -119,19 +127,24 @@ $page_title = h($name) . ' — Scholar Hub';
             font-weight: 800;
             letter-spacing: -0.02em;
             text-shadow: 0 2px 20px rgba(0,0,0,0.35);
+            font-size: clamp(1.35rem, 4.5vw, 2.25rem);
+            line-height: 1.15;
+            word-wrap: break-word;
         }
         .info-card {
             background: #fff;
             border-radius: var(--card-radius);
             border: 1px solid #eef0f3;
             box-shadow: 0 4px 18px rgba(0,0,0,0.06);
-            padding: 1.35rem 1.5rem;
+            padding: clamp(1rem, 3vw, 1.35rem) clamp(1rem, 3vw, 1.5rem);
             height: 100%;
             transition: transform var(--t), box-shadow var(--t);
         }
-        .info-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 14px 36px rgba(0,0,0,0.1);
+        @media (hover: hover) {
+            .info-card:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 14px 36px rgba(0,0,0,0.1);
+            }
         }
         .info-card h3 {
             font-size: 0.95rem;
@@ -163,7 +176,7 @@ $page_title = h($name) . ' — Scholar Hub';
         .book-bar {
             background: linear-gradient(135deg, #111827 0%, #374151 100%);
             border-radius: var(--card-radius);
-            padding: 1.5rem 1.75rem;
+            padding: clamp(1.15rem, 3vw, 1.5rem) clamp(1rem, 3vw, 1.75rem);
             color: #fff;
             box-shadow: 0 12px 36px rgba(0,0,0,0.18);
         }
@@ -172,16 +185,35 @@ $page_title = h($name) . ' — Scholar Hub';
             font-weight: 700;
             padding: 0.75rem 1.75rem;
             transition: transform var(--t), box-shadow var(--t);
+            width: 100%;
         }
-        .btn-book-main:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.25);
-            color: #fff;
+        @media (min-width: 768px) {
+            .btn-book-main {
+                width: auto;
+            }
+        }
+        @media (hover: hover) {
+            .btn-book-main:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+                color: #fff;
+            }
         }
         .desc-lead {
-            font-size: 1.05rem;
+            font-size: clamp(0.95rem, 2.2vw, 1.05rem);
             line-height: 1.65;
             color: #374151;
+        }
+
+        main.container {
+            padding-left: max(0.75rem, env(safe-area-inset-left));
+            padding-right: max(0.75rem, env(safe-area-inset-right));
+            padding-bottom: max(1rem, env(safe-area-inset-bottom));
+        }
+
+        .top-bar .container {
+            padding-left: max(0.75rem, env(safe-area-inset-left));
+            padding-right: max(0.75rem, env(safe-area-inset-right));
         }
     </style>
 </head>

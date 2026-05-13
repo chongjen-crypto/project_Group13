@@ -17,19 +17,32 @@ $facility_display = htmlspecialchars($facility, ENT_QUOTES, 'UTF-8');
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Book facility — Scholar Hub</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <style>
-        body { background: #f3f4f6; min-height: 100vh; font-family: system-ui, sans-serif; }
-        .card-box { max-width: 640px; border-radius: 16px; box-shadow: 0 12px 40px rgba(0,0,0,0.08); }
+        html { overflow-x: hidden; }
+        body {
+            background: #f3f4f6;
+            min-height: 100vh;
+            min-height: 100dvh;
+            font-family: system-ui, sans-serif;
+            overflow-x: hidden;
+            padding: max(1rem, env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(0.75rem, env(safe-area-inset-left));
+        }
+        .card-box {
+            width: 100%;
+            max-width: min(640px, 100%);
+            border-radius: clamp(12px, 2vw, 16px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+        }
     </style>
 </head>
-<body class="d-flex align-items-center py-5">
-    <div class="container">
+<body class="d-flex align-items-center py-4 py-md-5">
+    <div class="container px-3">
         <div class="card card-box mx-auto border-0">
-            <div class="card-body p-4 p-md-5">
+            <div class="card-body p-3 p-md-5">
                 <a href="student_dashboard.php" class="btn btn-outline-dark btn-sm rounded-pill mb-3">
                     <i class="bi bi-arrow-left me-1"></i> Dashboard
                 </a>

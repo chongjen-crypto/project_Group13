@@ -111,7 +111,7 @@ $recent_bookings = [
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Scholar Hub — Student Dashboard</title>
 
     <!-- Bootstrap 5 -->
@@ -132,10 +132,15 @@ $recent_bookings = [
             --transition: 0.22s ease;
         }
 
+        html {
+            overflow-x: hidden;
+        }
+
         body {
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: var(--page-bg);
             min-height: 100vh;
+            min-height: 100dvh;
             overflow-x: hidden;
         }
 
@@ -150,12 +155,16 @@ $recent_bookings = [
             left: 0;
             width: var(--sidebar-width);
             height: 100vh;
+            height: 100dvh;
+            max-height: 100dvh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
             background: var(--sidebar-bg);
             color: #fff;
             z-index: 1040;
             display: flex;
             flex-direction: column;
-            padding: 1.25rem 1rem;
+            padding: max(1.25rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
             transition: transform var(--transition);
             box-shadow: 4px 0 24px rgba(0,0,0,0.12);
         }
@@ -240,7 +249,7 @@ $recent_bookings = [
         .top-header {
             background: #fff;
             border-bottom: 1px solid #e5e7eb;
-            padding: 1rem 1.5rem;
+            padding: max(0.65rem, env(safe-area-inset-top)) clamp(0.75rem, 2.5vw, 1.5rem) 1rem;
             position: sticky;
             top: 0;
             z-index: 1020;
@@ -249,23 +258,26 @@ $recent_bookings = [
 
         .page-title {
             font-weight: 700;
-            font-size: 1.35rem;
+            font-size: clamp(1.05rem, 2.8vw, 1.35rem);
             color: #111827;
+            line-height: 1.2;
         }
 
         .welcome-text {
             color: #6b7280;
-            font-size: 0.95rem;
+            font-size: clamp(0.8rem, 2.2vw, 0.95rem);
+            word-wrap: break-word;
         }
 
         .datetime-pill {
-            font-size: 0.85rem;
+            font-size: clamp(0.72rem, 1.8vw, 0.85rem);
             color: #374151;
             background: #f3f4f6;
             border: 1px solid #e5e7eb;
             padding: 0.35rem 0.75rem;
             border-radius: 999px;
             white-space: nowrap;
+            max-width: 100%;
         }
 
         .avatar {
@@ -284,13 +296,14 @@ $recent_bookings = [
         }
 
         .content-area {
-            padding: 1.5rem;
+            padding: clamp(0.75rem, 2.5vw, 1.5rem);
+            padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+            max-width: 100%;
         }
 
-        /* Section titles */
         .section-title {
             font-weight: 700;
-            font-size: 1.1rem;
+            font-size: clamp(1rem, 2.5vw, 1.1rem);
             color: #111827;
             margin-bottom: 1rem;
             display: flex;
@@ -316,14 +329,22 @@ $recent_bookings = [
             height: 100%;
         }
 
-        .card-soft:hover {
-            transform: translateY(-4px) scale(1.01);
-            box-shadow: 0 12px 32px rgba(0,0,0,0.1);
+        @media (hover: hover) {
+            .card-soft:hover {
+                transform: translateY(-4px) scale(1.01);
+                box-shadow: 0 12px 32px rgba(0,0,0,0.1);
+            }
+        }
+
+        @media (hover: none) {
+            .card-soft:active {
+                transform: translateY(-2px);
+            }
         }
 
         .quick-action-card {
             text-align: center;
-            padding: 1.5rem 1rem;
+            padding: clamp(1rem, 3vw, 1.5rem) clamp(0.5rem, 2vw, 1rem);
             cursor: pointer;
             color: inherit;
             display: block;
@@ -355,7 +376,7 @@ $recent_bookings = [
 
         /* Facility cards — real photos from /assets */
         .facility-img {
-            height: 160px;
+            height: clamp(120px, 28vw, 180px);
             border-radius: var(--card-radius) var(--card-radius) 0 0;
             overflow: hidden;
             background: #e5e7eb;
@@ -369,8 +390,10 @@ $recent_bookings = [
             transition: transform 0.35s ease;
         }
 
-        .card-soft:hover .facility-img img {
-            transform: scale(1.06);
+        @media (hover: hover) {
+            .card-soft:hover .facility-img img {
+                transform: scale(1.06);
+            }
         }
 
         /* Whole facility card links to detail page */
@@ -426,6 +449,8 @@ $recent_bookings = [
             background: #fff;
             border-radius: 10px;
             padding: 0.45rem 0.6rem;
+            min-width: 2.75rem;
+            min-height: 2.75rem;
         }
 
         /* =========================
@@ -442,6 +467,8 @@ $recent_bookings = [
 
             .main-wrap {
                 margin-left: 0;
+                padding-left: env(safe-area-inset-left);
+                padding-right: env(safe-area-inset-right);
             }
 
             .btn-menu-toggle {
@@ -452,6 +479,19 @@ $recent_bookings = [
 
             .datetime-pill {
                 font-size: 0.78rem;
+            }
+        }
+
+        /* Very small phones: allow date/time to wrap */
+        @media (max-width: 575.98px) {
+            .datetime-pill {
+                white-space: normal;
+                text-align: center;
+                line-height: 1.35;
+            }
+
+            .table-modern tbody td {
+                font-size: 0.82rem;
             }
         }
     </style>
