@@ -1,30 +1,208 @@
 <?php
 // =========================
 // Scholar Hub - Staff Registration
+// Staff gate code + email verification (PHPMailer) + strong password
 // =========================
 
 session_start();
-require 'db.php';
+require __DIR__ . '/db.php';
+require_once __DIR__ . '/includes/mail_helper.php';
 
-// Secret staff registration code (server-side enforced)
 $STAFF_REGISTRATION_CODE = 'JOINSTAFF67';
+$STAFF_CODE_TTL_SECONDS  = 300; // staff gate
 
-// How long the verification is valid (seconds)
-$STAFF_CODE_TTL_SECONDS = 300; // 5 minutes
+const STAFF_EMAIL_REG_TTL_SECONDS = 300;
+const STAFF_EMAIL_REG_COOLDOWN    = 60;
 
-// Reset verification (optional)
+function staff_registration_password_errors(string $p): array
+{
+    $errs = [];
+    if (strlen($p) < 8) {
+        $errs[] = 'At least 8 characters.';
+    }
+    if (!preg_match('/[A-Z]/', $p)) {
+        $errs[] = 'At least one uppercase letter.';
+    }
+    if (!preg_match('/[a-z]/', $p)) {
+        $errs[] = 'At least one lowercase letter.';
+    }
+    if (!preg_match('/[0-9]/', $p)) {
+        $errs[] = 'At least one number.';
+    }
+    if (!preg_match('/[^A-Za-z0-9]/', $p)) {
+        $errs[] = 'At least one special symbol.';
+    }
+    return $errs;
+}
+
+function staff_users_has_email_verified_column(mysqli $conn): bool
+{
+    static $cache = null;
+    if ($cache !== null) {
+        return $cache;
+    }
+    $res = $conn->query("SHOW COLUMNS FROM users LIKE 'email_verified'");
+    $cache = ($res instanceof mysqli_result && $res->num_rows > 0);
+    return $cache;
+}
+
+function staff_reg_clear_email_verify_session(): void
+{
+    unset(
+        $_SESSION['staff_email_reg_verify_email'],
+        $_SESSION['staff_email_reg_verify_secret'],
+        $_SESSION['staff_email_reg_verify_hmac'],
+        $_SESSION['staff_email_reg_verify_expires'],
+        $_SESSION['staff_email_reg_verify_sent_at'],
+        $_SESSION['staff_email_reg_verified'],
+        $_SESSION['staff_email_reg_verified_email']
+    );
+}
+
+/** Staff gate must be valid for email AJAX + registration form */
+function staff_gate_ok(): bool
+{
+    $ok = !empty($_SESSION['staff_code_verified']);
+    $at = (int) ($_SESSION['staff_code_verified_at'] ?? 0);
+    if (!$ok || !$at) {
+        return false;
+    }
+    return (time() - $at) <= $GLOBALS['STAFF_CODE_TTL_SECONDS'];
+}
+
+// -------------------------
+// AJAX: staff email send / verify (after staff code; separate session keys from student register)
+// -------------------------
+if (
+    $_SERVER['REQUEST_METHOD'] === 'POST'
+    && isset($_SERVER['HTTP_X_REQUESTED_WITH'])
+    && strtolower((string) $_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest'
+) {
+    header('Content-Type: application/json; charset=UTF-8');
+
+    if (!staff_gate_ok()) {
+        echo json_encode(['success' => false, 'message' => 'Staff access expired. Enter the staff code again.']);
+        exit;
+    }
+
+    $ajax = $_POST['staff_reg_action'] ?? '';
+
+    if ($ajax === 'send_email_code') {
+        $email = trim($_POST['email'] ?? '');
+        if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            echo json_encode(['success' => false, 'message' => 'Please enter a valid email address.']);
+            exit;
+        }
+
+        $stmt = $conn->prepare('SELECT id FROM users WHERE email = ? LIMIT 1');
+        if (!$stmt) {
+            echo json_encode(['success' => false, 'message' => 'Database error.']);
+            exit;
+        }
+        $stmt->bind_param('s', $email);
+        $stmt->execute();
+        $stmt->store_result();
+        if ($stmt->num_rows > 0) {
+            $stmt->close();
+            echo json_encode(['success' => false, 'message' => 'This email is already registered.']);
+            exit;
+        }
+        $stmt->close();
+
+        $now = time();
+        $same = strcasecmp($email, (string) ($_SESSION['staff_email_reg_verify_email'] ?? '')) === 0;
+        if ($same && isset($_SESSION['staff_email_reg_verify_sent_at']) && ($now - (int) $_SESSION['staff_email_reg_verify_sent_at']) < STAFF_EMAIL_REG_COOLDOWN) {
+            $wait = STAFF_EMAIL_REG_COOLDOWN - ($now - (int) $_SESSION['staff_email_reg_verify_sent_at']);
+            echo json_encode(['success' => false, 'message' => 'Please wait before resending the code.', 'cooldown' => $wait]);
+            exit;
+        }
+
+        $_SESSION['staff_email_reg_verified'] = false;
+        unset($_SESSION['staff_email_reg_verified_email']);
+
+        $code   = (string) random_int(100000, 999999);
+        $secret = bin2hex(random_bytes(16));
+        $_SESSION['staff_email_reg_verify_secret']  = $secret;
+        $_SESSION['staff_email_reg_verify_hmac']      = hash_hmac('sha256', $code, $secret);
+        $_SESSION['staff_email_reg_verify_email']     = $email;
+        $_SESSION['staff_email_reg_verify_expires']   = $now + STAFF_EMAIL_REG_TTL_SECONDS;
+        $_SESSION['staff_email_reg_verify_sent_at']   = $now;
+
+        $body = "Your Scholar Hub staff registration email verification code is: {$code}\n\nThis code expires in 5 minutes.\nIf you did not request this, ignore this email.";
+        $send = scholarhub_send_mail($email, 'Scholar Hub — Staff Email Verification Code', $body);
+        if (!$send['success']) {
+            staff_reg_clear_email_verify_session();
+            echo json_encode(['success' => false, 'message' => $send['error'] ?? 'Failed to send email.']);
+            exit;
+        }
+
+        echo json_encode([
+            'success'    => true,
+            'message'    => 'Verification code sent to your email.',
+            'expires_in' => STAFF_EMAIL_REG_TTL_SECONDS,
+            'cooldown'   => STAFF_EMAIL_REG_COOLDOWN,
+        ]);
+        exit;
+    }
+
+    if ($ajax === 'verify_email_code') {
+        $email = trim($_POST['email'] ?? '');
+        $code  = preg_replace('/\D/', '', (string) ($_POST['verification_code'] ?? ''));
+
+        if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            echo json_encode(['success' => false, 'message' => 'Please enter a valid email address.']);
+            exit;
+        }
+        if (strlen($code) !== 6) {
+            echo json_encode(['success' => false, 'message' => 'Enter the 6-digit code.']);
+            exit;
+        }
+
+        if (strcasecmp($email, (string) ($_SESSION['staff_email_reg_verify_email'] ?? '')) !== 0) {
+            echo json_encode(['success' => false, 'message' => 'Send a code to this email first.']);
+            exit;
+        }
+
+        if (time() > (int) ($_SESSION['staff_email_reg_verify_expires'] ?? 0)) {
+            echo json_encode(['success' => false, 'message' => 'Code expired. Request a new code.']);
+            exit;
+        }
+
+        $secret = (string) ($_SESSION['staff_email_reg_verify_secret'] ?? '');
+        $expect = (string) ($_SESSION['staff_email_reg_verify_hmac'] ?? '');
+        $calc   = hash_hmac('sha256', $code, $secret);
+
+        if ($expect === '' || !hash_equals($expect, $calc)) {
+            echo json_encode(['success' => false, 'message' => 'Invalid verification code']);
+            exit;
+        }
+
+        $_SESSION['staff_email_reg_verified']      = true;
+        $_SESSION['staff_email_reg_verified_email'] = strtolower($email);
+        unset($_SESSION['staff_email_reg_verify_hmac'], $_SESSION['staff_email_reg_verify_secret']);
+
+        echo json_encode(['success' => true, 'message' => 'Email verified successfully']);
+        exit;
+    }
+
+    echo json_encode(['success' => false, 'message' => 'Invalid request.']);
+    exit;
+}
+
+// Reset staff gate + email verification
 if (isset($_GET['reset']) && $_GET['reset'] === '1') {
     unset($_SESSION['staff_code_verified'], $_SESSION['staff_code_verified_at']);
+    staff_reg_clear_email_verify_session();
 }
 
 // Page state
 $code_verified = $_SESSION['staff_code_verified'] ?? false;
 $verified_at = $_SESSION['staff_code_verified_at'] ?? 0;
 
-// Expire verification after TTL
-if ($code_verified && (time() - (int)$verified_at) > $STAFF_CODE_TTL_SECONDS) {
+if ($code_verified && (time() - (int) $verified_at) > $STAFF_CODE_TTL_SECONDS) {
     $code_verified = false;
     unset($_SESSION['staff_code_verified'], $_SESSION['staff_code_verified_at']);
+    staff_reg_clear_email_verify_session();
 }
 $code_error = '';
 
@@ -68,6 +246,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$code_verified || $is_expired) {
             $code_error = 'Invalid staff registration code';
             unset($_SESSION['staff_code_verified'], $_SESSION['staff_code_verified_at']);
+            staff_reg_clear_email_verify_session();
         } else {
             // Get and trim form values
             $full_name  = trim($_POST['full_name'] ?? '');
@@ -90,10 +269,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $errors['email'] = 'Email is required.';
             } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 $errors['email'] = 'Please enter a valid email address.';
+            } else {
+                $ev = !empty($_SESSION['staff_email_reg_verified']) && !empty($_SESSION['staff_email_reg_verified_email']);
+                if ($ev && strtolower($email) !== (string) $_SESSION['staff_email_reg_verified_email']) {
+                    $errors['email'] = 'Email changed after verification. Send and verify the code again.';
+                } elseif (!$ev) {
+                    $errors['email'] = 'Please verify your email before registering.';
+                }
             }
 
+            $pwErrs = staff_registration_password_errors((string) $password);
             if ($password === '') {
                 $errors['password'] = 'Password is required.';
+            } elseif ($pwErrs !== []) {
+                $errors['password'] = 'Password must meet all rules: ' . implode(' ', $pwErrs);
             }
 
             if ($confirm_password === '') {
@@ -134,34 +323,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
 
-                // Insert staff account
                 if (empty($errors)) {
                     $hashed_password = password_hash($password, PASSWORD_DEFAULT);
                     $role = 'staff';
+                    $hasCol = staff_users_has_email_verified_column($conn);
 
-                    $sql = "INSERT INTO users (role, full_name, user_id, email, phone, password)
-                            VALUES (?, ?, ?, ?, ?, ?)";
-                    if ($stmt = $conn->prepare($sql)) {
-                        $stmt->bind_param("ssssss", $role, $full_name, $staff_id, $email, $phone, $hashed_password);
-                        if ($stmt->execute()) {
-                            // Clear form values
-                            $full_name = $staff_id = $email = $phone = '';
-                            $success_message = 'Registration successful! Redirecting to login page...';
-
-                            // Clear verification immediately after successful staff registration
-                            unset($_SESSION['staff_code_verified'], $_SESSION['staff_code_verified_at']);
-                        } else {
-                            $errors['general'] = 'Registration failed. Please try again.';
+                    if ($hasCol) {
+                        $sql = "INSERT INTO users (role, full_name, user_id, email, phone, password, email_verified, verification_code, verification_expiry)
+                                VALUES (?, ?, ?, ?, ?, ?, 1, NULL, NULL)";
+                        $stmt = $conn->prepare($sql);
+                        if ($stmt) {
+                            $stmt->bind_param("ssssss", $role, $full_name, $staff_id, $email, $phone, $hashed_password);
                         }
-                        $stmt->close();
                     } else {
-                        $errors['general'] = 'Database error. Please try again later.';
+                        $sql = "INSERT INTO users (role, full_name, user_id, email, phone, password)
+                                VALUES (?, ?, ?, ?, ?, ?)";
+                        $stmt = $conn->prepare($sql);
+                        if ($stmt) {
+                            $stmt->bind_param("ssssss", $role, $full_name, $staff_id, $email, $phone, $hashed_password);
+                        }
+                    }
+
+                    if (!isset($stmt) || !$stmt) {
+                        $errors['general'] = 'Database error. Run sql/alter_users_email_verification.sql if the schema is outdated.';
+                    } elseif ($stmt->execute()) {
+                        $full_name = $staff_id = $email = $phone = '';
+                        $success_message = 'Registration successful! Redirecting to login page...';
+                        unset($_SESSION['staff_code_verified'], $_SESSION['staff_code_verified_at']);
+                        staff_reg_clear_email_verify_session();
+                    } else {
+                        $errors['general'] = 'Registration failed. Please try again.';
+                    }
+                    if (isset($stmt) && $stmt) {
+                        $stmt->close();
                     }
                 }
             }
         }
     }
 }
+
+$staff_email_verified_ui = !empty($_SESSION['staff_email_reg_verified']) && !empty($_SESSION['staff_email_reg_verified_email']);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -270,6 +472,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         .error-text { font-size: 0.8rem; }
 
+        .pwd-strength-bar { height: 6px; border-radius: 999px; background: #e9ecef; overflow: hidden; }
+        .pwd-strength-fill { height: 100%; width: 0%; transition: width 0.25s ease, background 0.25s ease; border-radius: 999px; }
+        .pwd-check { font-size: 0.8rem; color: #6c757d; transition: color 0.2s ease; }
+        .pwd-check.ok { color: #198754; font-weight: 600; }
+        .pwd-check i { margin-right: 0.25rem; }
+        #sendCodeBtn.is-loading, #verifyCodeBtn.is-loading { pointer-events: none; opacity: 0.75; }
+        .spinner-border-sm { width: 1rem; height: 1rem; border-width: 0.15em; }
+
         /* Smooth appearance animation */
         .step-panel {
             transition: opacity 280ms ease, transform 280ms ease;
@@ -377,6 +587,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <form method="POST" id="staffRegisterForm" novalidate>
                 <input type="hidden" name="action" value="register_staff">
 
+                <div id="ajaxAlert" class="alert py-2 d-none" role="alert"></div>
+
                 <!-- Full Name -->
                 <div class="mb-3">
                     <label for="full_name" class="form-label">Full Name</label>
@@ -409,19 +621,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 </div>
 
-                <!-- Email -->
+                <!-- Email + verification -->
                 <div class="mb-3">
-                    <label for="email" class="form-label">Email</label>
-                    <input
-                        type="email"
-                        class="form-control <?php echo isset($errors['email']) ? 'is-invalid' : ''; ?>"
-                        id="email"
-                        name="email"
-                        value="<?php echo htmlspecialchars($email); ?>"
-                        placeholder="Enter your email"
-                    >
+                    <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
+                    <div class="input-group flex-nowrap">
+                        <input
+                            type="email"
+                            class="form-control <?php echo isset($errors['email']) ? 'is-invalid' : ''; ?>"
+                            id="email"
+                            name="email"
+                            value="<?php echo htmlspecialchars($email); ?>"
+                            placeholder="your.email@university.edu"
+                            autocomplete="email"
+                        >
+                        <button type="button" class="btn btn-outline-dark px-2 px-sm-3 flex-shrink-0" id="sendCodeBtn" title="Send verification code">
+                            <span class="btn-label"><i class="bi bi-envelope me-1 d-none d-sm-inline"></i>Send Code</span>
+                            <span class="btn-loading d-none spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        </button>
+                    </div>
                     <div class="text-danger error-text" id="emailError">
                         <?php echo isset($errors['email']) ? htmlspecialchars($errors['email']) : ''; ?>
+                    </div>
+                    <div class="form-text small" id="cooldownHint"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="verification_code" class="form-label">Verification Code</label>
+                    <div class="input-group flex-nowrap">
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="verification_code"
+                            inputmode="numeric"
+                            maxlength="6"
+                            placeholder="6-digit code"
+                            autocomplete="one-time-code"
+                        >
+                        <button type="button" class="btn btn-primary px-2 px-sm-3 flex-shrink-0" id="verifyCodeBtn">
+                            <span class="btn-label">Verify</span>
+                            <span class="btn-loading d-none spinner-border spinner-border-sm text-light" role="status"></span>
+                        </button>
+                    </div>
+                    <div class="text-danger error-text" id="verifyCodeError"></div>
+                    <div id="emailVerifiedBanner" class="alert alert-success py-2 mt-2 mb-0 small <?php echo $staff_email_verified_ui ? '' : 'd-none'; ?>">
+                        <i class="bi bi-check-circle-fill me-1"></i> Email verified successfully
                     </div>
                 </div>
 
@@ -448,11 +691,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             class="form-control <?php echo isset($errors['password']) ? 'is-invalid' : ''; ?>"
                             id="password"
                             name="password"
-                            placeholder="Create a password"
+                            placeholder="Strong password"
+                            autocomplete="new-password"
                         >
-                        <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                        <button class="btn btn-outline-secondary border-start-0" type="button" id="togglePassword" aria-label="Show password">
                             <i class="bi bi-eye-slash" id="passwordIcon"></i>
                         </button>
+                    </div>
+                    <div class="pwd-strength-bar mt-2 mb-1"><div class="pwd-strength-fill" id="pwdStrengthFill"></div></div>
+                    <div class="small mb-2" id="pwdStrengthLabel"><span class="text-muted">Strength:</span> <span id="pwdStrengthText">—</span></div>
+                    <div class="mb-2" id="pwdChecklist">
+                        <div class="pwd-check" id="chk-len"><i class="bi bi-circle"></i> Minimum 8 characters</div>
+                        <div class="pwd-check" id="chk-up"><i class="bi bi-circle"></i> Uppercase letter</div>
+                        <div class="pwd-check" id="chk-lo"><i class="bi bi-circle"></i> Lowercase letter</div>
+                        <div class="pwd-check" id="chk-num"><i class="bi bi-circle"></i> Number</div>
+                        <div class="pwd-check" id="chk-sym"><i class="bi bi-circle"></i> Special symbol</div>
                     </div>
                     <div class="text-danger error-text" id="passwordError">
                         <?php echo isset($errors['password']) ? htmlspecialchars($errors['password']) : ''; ?>
@@ -469,8 +722,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             id="confirm_password"
                             name="confirm_password"
                             placeholder="Re-enter your password"
+                            autocomplete="new-password"
                         >
-                        <button class="btn btn-outline-secondary" type="button" id="toggleConfirmPassword">
+                        <button class="btn btn-outline-secondary border-start-0" type="button" id="toggleConfirmPassword" aria-label="Show confirm password">
                             <i class="bi bi-eye-slash" id="confirmPasswordIcon"></i>
                         </button>
                     </div>
@@ -497,38 +751,193 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-    // ==========
-    // Step transition (smooth show/hide)
-    // ==========
-    const codeStep = document.getElementById('codeStep');
-    const registerStep = document.getElementById('registerStep');
+(function () {
+    'use strict';
 
-    // ==========
-    // Toggle staff code visibility
-    // ==========
-    const codeInput = document.getElementById('staff_code');
+    const REG = <?php echo json_encode([
+        'emailVerified' => $staff_email_verified_ui,
+        'verifiedEmail' => $staff_email_verified_ui ? (string) ($_SESSION['staff_email_reg_verified_email'] ?? '') : '',
+    ]); ?>;
+
+    // Step 1: staff gate
+    const staffGateInput = document.getElementById('staff_code');
     const toggleCodeBtn = document.getElementById('toggleCode');
     const codeIcon = document.getElementById('codeIcon');
+    const codeForm = document.getElementById('codeForm');
+    const codeErrorEl = document.getElementById('codeError');
 
-    if (toggleCodeBtn && codeInput) {
+    if (toggleCodeBtn && staffGateInput) {
         toggleCodeBtn.addEventListener('click', function () {
-            const type = codeInput.type === 'password' ? 'text' : 'password';
-            codeInput.type = type;
+            const type = staffGateInput.type === 'password' ? 'text' : 'password';
+            staffGateInput.type = type;
             codeIcon.classList.toggle('bi-eye');
             codeIcon.classList.toggle('bi-eye-slash');
         });
     }
 
-    // ==========
-    // Toggle password visibility
-    // ==========
+    if (codeForm) {
+        codeForm.addEventListener('submit', function (e) {
+            if (!staffGateInput) return;
+            codeErrorEl.textContent = '';
+            const value = staffGateInput.value.trim();
+            if (value === '') {
+                e.preventDefault();
+                codeErrorEl.textContent = 'Code is required.';
+            }
+        });
+    }
+
+    // Step 2: registration + email verify + password meter
+    const sendBtn = document.getElementById('sendCodeBtn');
+    const verifyBtn = document.getElementById('verifyCodeBtn');
+    const emailInput = document.getElementById('email');
+    const emailVerifyCodeInput = document.getElementById('verification_code');
+    const ajaxAlert = document.getElementById('ajaxAlert');
+    const emailError = document.getElementById('emailError');
+    const verifyCodeError = document.getElementById('verifyCodeError');
+    const cooldownHint = document.getElementById('cooldownHint');
+    const banner = document.getElementById('emailVerifiedBanner');
+    const staffRegisterForm = document.getElementById('staffRegisterForm');
+
     const passwordInput = document.getElementById('password');
     const togglePasswordBtn = document.getElementById('togglePassword');
     const passwordIcon = document.getElementById('passwordIcon');
-
     const confirmPasswordInput = document.getElementById('confirm_password');
     const toggleConfirmPasswordBtn = document.getElementById('toggleConfirmPassword');
     const confirmPasswordIcon = document.getElementById('confirmPasswordIcon');
+
+    const fullNameError = document.getElementById('fullNameError');
+    const staffIdError = document.getElementById('staffIdError');
+    const phoneError = document.getElementById('phoneError');
+    const passwordError = document.getElementById('passwordError');
+    const confirmPasswordError = document.getElementById('confirmPasswordError');
+
+    let cooldownTimer = null;
+
+    function showAjaxAlert(type, msg) {
+        if (!ajaxAlert) return;
+        ajaxAlert.className = 'alert py-2 ' + (type === 'success' ? 'alert-success' : type === 'danger' ? 'alert-danger' : 'alert-info');
+        ajaxAlert.textContent = msg;
+        ajaxAlert.classList.remove('d-none');
+    }
+    function hideAjaxAlert() {
+        if (ajaxAlert) ajaxAlert.classList.add('d-none');
+    }
+
+    function setBtnLoading(btn, loading) {
+        if (!btn) return;
+        btn.classList.toggle('is-loading', loading);
+        const label = btn.querySelector('.btn-label');
+        const spin = btn.querySelector('.btn-loading');
+        if (label) label.classList.toggle('d-none', loading);
+        if (spin) spin.classList.toggle('d-none', !loading);
+    }
+
+    function postJson(body) {
+        return fetch('staff_registration.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: body,
+            credentials: 'same-origin'
+        }).then(function (r) { return r.json(); });
+    }
+
+    function startCooldown(seconds) {
+        if (!sendBtn || !cooldownHint) return;
+        if (cooldownTimer) clearInterval(cooldownTimer);
+        let s = seconds;
+        sendBtn.disabled = true;
+        function tick() {
+            cooldownHint.textContent = s > 0 ? ('Resend available in ' + s + 's') : '';
+            if (s <= 0) {
+                clearInterval(cooldownTimer);
+                cooldownTimer = null;
+                sendBtn.disabled = false;
+                cooldownHint.textContent = '';
+                return;
+            }
+            s--;
+        }
+        tick();
+        cooldownTimer = setInterval(tick, 1000);
+    }
+
+    if (banner && REG.emailVerified) {
+        banner.classList.remove('d-none');
+    }
+
+    if (emailVerifyCodeInput) {
+        emailVerifyCodeInput.addEventListener('input', function () {
+            emailVerifyCodeInput.value = emailVerifyCodeInput.value.replace(/\D/g, '').slice(0, 6);
+        });
+    }
+
+    if (sendBtn && emailInput) {
+        sendBtn.addEventListener('click', function () {
+            hideAjaxAlert();
+            if (emailError) emailError.textContent = '';
+            if (verifyCodeError) verifyCodeError.textContent = '';
+            const email = emailInput.value.trim();
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                if (emailError) emailError.textContent = 'Please enter a valid email address.';
+                emailInput.classList.add('is-invalid');
+                return;
+            }
+            emailInput.classList.remove('is-invalid');
+            setBtnLoading(sendBtn, true);
+            const body = 'staff_reg_action=send_email_code&email=' + encodeURIComponent(email);
+            postJson(body).then(function (data) {
+                setBtnLoading(sendBtn, false);
+                if (data.success) {
+                    showAjaxAlert('success', data.message || 'Code sent.');
+                    if (banner) banner.classList.add('d-none');
+                    if (data.cooldown) startCooldown(parseInt(data.cooldown, 10));
+                } else {
+                    showAjaxAlert('danger', data.message || 'Request failed.');
+                    if (data.cooldown) startCooldown(parseInt(data.cooldown, 10));
+                }
+            }).catch(function () {
+                setBtnLoading(sendBtn, false);
+                showAjaxAlert('danger', 'Network error. Try again.');
+            });
+        });
+    }
+
+    if (verifyBtn && emailInput && emailVerifyCodeInput) {
+        verifyBtn.addEventListener('click', function () {
+            hideAjaxAlert();
+            if (verifyCodeError) verifyCodeError.textContent = '';
+            const email = emailInput.value.trim();
+            const code = emailVerifyCodeInput.value.trim();
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                if (emailError) emailError.textContent = 'Enter the same email you sent the code to.';
+                return;
+            }
+            if (code.length !== 6) {
+                if (verifyCodeError) verifyCodeError.textContent = 'Enter the 6-digit code.';
+                return;
+            }
+            setBtnLoading(verifyBtn, true);
+            const body = 'staff_reg_action=verify_email_code&email=' + encodeURIComponent(email) + '&verification_code=' + encodeURIComponent(code);
+            postJson(body).then(function (data) {
+                setBtnLoading(verifyBtn, false);
+                if (data.success) {
+                    showAjaxAlert('success', data.message || 'Verified.');
+                    REG.emailVerified = true;
+                    REG.verifiedEmail = email.toLowerCase();
+                    if (banner) banner.classList.remove('d-none');
+                } else {
+                    if (verifyCodeError) verifyCodeError.textContent = data.message || 'Verification failed.';
+                }
+            }).catch(function () {
+                setBtnLoading(verifyBtn, false);
+                showAjaxAlert('danger', 'Network error.');
+            });
+        });
+    }
 
     if (togglePasswordBtn && passwordInput) {
         togglePasswordBtn.addEventListener('click', function () {
@@ -548,132 +957,126 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         });
     }
 
-    // ==========
-    // Frontend validation: code form
-    // ==========
-    const codeForm = document.getElementById('codeForm');
-    const codeError = document.getElementById('codeError');
+    const fill = document.getElementById('pwdStrengthFill');
+    const strengthText = document.getElementById('pwdStrengthText');
 
-    if (codeForm) {
-        codeForm.addEventListener('submit', function (e) {
-            if (!codeInput) return;
-            codeError.textContent = '';
+    function updatePasswordMeter() {
+        if (!passwordInput || !fill || !strengthText) return;
+        const v = passwordInput.value;
+        const len = v.length >= 8;
+        const up = /[A-Z]/.test(v);
+        const lo = /[a-z]/.test(v);
+        const num = /[0-9]/.test(v);
+        const sym = /[^A-Za-z0-9]/.test(v);
+        const score = [len, up, lo, num, sym].filter(Boolean).length;
 
-            const value = codeInput.value.trim();
-            if (value === '') {
-                e.preventDefault();
-                codeError.textContent = 'Code is required.';
-            }
-        });
+        function setRow(id, ok, text) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const iconClass = ok ? 'bi-check-circle-fill' : 'bi-circle';
+            el.className = 'pwd-check' + (ok ? ' ok' : '');
+            el.innerHTML = '<i class="bi ' + iconClass + '"></i> ' + text;
+        }
+        setRow('chk-len', len, 'Minimum 8 characters');
+        setRow('chk-up', up, 'Uppercase letter');
+        setRow('chk-lo', lo, 'Lowercase letter');
+        setRow('chk-num', num, 'Number');
+        setRow('chk-sym', sym, 'Special symbol');
+
+        let label = '—', pct = 0, color = '#e9ecef';
+        if (v.length === 0) { label = '—'; pct = 0; }
+        else if (score <= 2) { label = 'Weak'; pct = 33; color = '#dc3545'; }
+        else if (score <= 4) { label = 'Medium'; pct = 66; color = '#ffc107'; }
+        else { label = 'Strong'; pct = 100; color = '#198754'; }
+
+        strengthText.textContent = label;
+        fill.style.width = pct + '%';
+        fill.style.background = v.length ? color : '#e9ecef';
     }
 
-    // ==========
-    // Frontend validation: staff registration form
-    // ==========
-    const staffRegisterForm = document.getElementById('staffRegisterForm');
-
-    const fullNameError = document.getElementById('fullNameError');
-    const staffIdError = document.getElementById('staffIdError');
-    const emailError = document.getElementById('emailError');
-    const phoneError = document.getElementById('phoneError');
-    const passwordError = document.getElementById('passwordError');
-    const confirmPasswordError = document.getElementById('confirmPasswordError');
-
-    function setError(inputElement, errorElement, message) {
-        errorElement.textContent = message;
-        inputElement.classList.add('is-invalid');
+    if (passwordInput) {
+        passwordInput.addEventListener('input', updatePasswordMeter);
+        updatePasswordMeter();
     }
 
-    function clearError(inputElement, errorElement) {
-        errorElement.textContent = '';
-        inputElement.classList.remove('is-invalid');
+    function passwordStrongClient(v) {
+        return v.length >= 8 && /[A-Z]/.test(v) && /[a-z]/.test(v) && /[0-9]/.test(v) && /[^A-Za-z0-9]/.test(v);
     }
 
     if (staffRegisterForm) {
         staffRegisterForm.addEventListener('submit', function (e) {
-            let isValid = true;
+            hideAjaxAlert();
 
-            // Clear previous errors
+            const fullNameEl = document.getElementById('full_name');
+            const staffIdEl = document.getElementById('staff_id');
+            const phoneEl = document.getElementById('phone');
+
             if (fullNameError) fullNameError.textContent = '';
             if (staffIdError) staffIdError.textContent = '';
             if (emailError) emailError.textContent = '';
             if (phoneError) phoneError.textContent = '';
             if (passwordError) passwordError.textContent = '';
             if (confirmPasswordError) confirmPasswordError.textContent = '';
+            if (verifyCodeError) verifyCodeError.textContent = '';
 
-            const fullNameEl = document.getElementById('full_name');
-            const staffIdEl = document.getElementById('staff_id');
-            const emailEl = document.getElementById('email');
-            const phoneEl = document.getElementById('phone');
+            let isValid = true;
+
+            function setErr(inputEl, errEl, msg) {
+                if (errEl) errEl.textContent = msg;
+                if (inputEl) inputEl.classList.add('is-invalid');
+                isValid = false;
+            }
+            function clearErr(inputEl, errEl) {
+                if (errEl) errEl.textContent = '';
+                if (inputEl) inputEl.classList.remove('is-invalid');
+            }
 
             const fullNameValue = fullNameEl ? fullNameEl.value.trim() : '';
             const staffIdValue = staffIdEl ? staffIdEl.value.trim() : '';
-            const emailValue = emailEl ? emailEl.value.trim() : '';
+            const emailValue = emailInput ? emailInput.value.trim() : '';
             const passwordValue = passwordInput ? passwordInput.value : '';
             const confirmPasswordValue = confirmPasswordInput ? confirmPasswordInput.value : '';
 
-            // Full Name
             if (fullNameEl) {
-                if (fullNameValue === '') {
-                    setError(fullNameEl, fullNameError, 'Full Name is required.');
-                    isValid = false;
-                } else {
-                    clearError(fullNameEl, fullNameError);
-                }
+                if (fullNameValue === '') setErr(fullNameEl, fullNameError, 'Full Name is required.');
+                else clearErr(fullNameEl, fullNameError);
             }
 
-            // Staff ID
             if (staffIdEl) {
-                if (staffIdValue === '') {
-                    setError(staffIdEl, staffIdError, 'Staff ID is required.');
-                    isValid = false;
-                } else {
-                    clearError(staffIdEl, staffIdError);
-                }
+                if (staffIdValue === '') setErr(staffIdEl, staffIdError, 'Staff ID is required.');
+                else clearErr(staffIdEl, staffIdError);
             }
 
-            // Email
-            if (emailEl) {
-                if (emailValue === '') {
-                    setError(emailEl, emailError, 'Email is required.');
-                    isValid = false;
-                } else {
-                    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                    if (!emailPattern.test(emailValue)) {
-                        setError(emailEl, emailError, 'Please enter a valid email address.');
-                        isValid = false;
-                    } else {
-                        clearError(emailEl, emailError);
-                    }
-                }
+            if (emailInput) {
+                if (emailValue === '') setErr(emailInput, emailError, 'Email is required.');
+                else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)) {
+                    setErr(emailInput, emailError, 'Please enter a valid email address.');
+                } else clearErr(emailInput, emailError);
             }
 
-            // Phone is optional
             if (phoneEl && phoneError) {
                 phoneError.textContent = '';
                 phoneEl.classList.remove('is-invalid');
             }
 
-            // Password
             if (passwordInput) {
-                if (passwordValue === '') {
-                    setError(passwordInput, passwordError, 'Password is required.');
-                    isValid = false;
-                } else {
-                    clearError(passwordInput, passwordError);
-                }
+                if (passwordValue === '') setErr(passwordInput, passwordError, 'Password is required.');
+                else if (!passwordStrongClient(passwordValue)) {
+                    setErr(passwordInput, passwordError, 'Password does not meet strength requirements.');
+                } else clearErr(passwordInput, passwordError);
             }
 
-            // Confirm Password
             if (confirmPasswordInput) {
                 if (confirmPasswordValue === '') {
-                    setError(confirmPasswordInput, confirmPasswordError, 'Confirm Password is required.');
-                    isValid = false;
+                    setErr(confirmPasswordInput, confirmPasswordError, 'Confirm Password is required.');
                 } else if (passwordValue !== confirmPasswordValue) {
-                    setError(confirmPasswordInput, confirmPasswordError, 'Passwords do not match.');
-                    isValid = false;
-                } else {
-                    clearError(confirmPasswordInput, confirmPasswordError);
+                    setErr(confirmPasswordInput, confirmPasswordError, 'Passwords do not match.');
+                } else clearErr(confirmPasswordInput, confirmPasswordError);
+            }
+
+            if (emailInput && emailValue && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)) {
+                if (!REG.emailVerified || emailValue.toLowerCase() !== String(REG.verifiedEmail || '').toLowerCase()) {
+                    setErr(emailInput, emailError, 'Please verify your email before registering.');
                 }
             }
 
@@ -681,14 +1084,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         });
     }
 
-    // ==========
-    // After PHP success: redirect to login
-    // ==========
     <?php if (!empty($success_message)) : ?>
     setTimeout(function () {
         window.location.href = 'login.php';
     }, 2500);
     <?php endif; ?>
+})();
 </script>
 </body>
 </html>
