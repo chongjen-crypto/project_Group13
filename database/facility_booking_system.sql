@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 11, 2026 at 10:18 AM
+-- Generation Time: May 14, 2026 at 05:53 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -20,6 +20,160 @@ SET time_zone = "+00:00";
 --
 -- Database: `facility_booking_system`
 --
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `badminton_court`
+--
+
+CREATE TABLE `badminton_court` (
+  `id` int(11) NOT NULL,
+  `student_name` varchar(100) NOT NULL,
+  `student_email` varchar(100) DEFAULT NULL,
+  `booking_date` date NOT NULL,
+  `start_time` time NOT NULL,
+  `end_time` time NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `basketball_court`
+--
+
+CREATE TABLE `basketball_court` (
+  `id` int(11) NOT NULL,
+  `student_name` varchar(100) NOT NULL,
+  `student_email` varchar(100) DEFAULT NULL,
+  `booking_date` date NOT NULL,
+  `start_time` time NOT NULL,
+  `end_time` time NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `facilities`
+--
+
+CREATE TABLE `facilities` (
+  `id` int(11) NOT NULL,
+  `facility_name` varchar(100) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `facilities`
+--
+
+INSERT INTO `facilities` (`id`, `facility_name`) VALUES
+(1, 'Badminton Court'),
+(2, 'Tennis Court'),
+(3, 'Swimming Pool'),
+(4, 'Gym Room'),
+(5, 'Track Field'),
+(6, 'Volleyball Court'),
+(7, 'Basketball Court'),
+(8, 'Snooker Room'),
+(9, 'Futsal Court');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `futsal_court`
+--
+
+CREATE TABLE `futsal_court` (
+  `id` int(11) NOT NULL,
+  `student_name` varchar(100) NOT NULL,
+  `student_email` varchar(100) DEFAULT NULL,
+  `booking_date` date NOT NULL,
+  `start_time` time NOT NULL,
+  `end_time` time NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `gym_room`
+--
+
+CREATE TABLE `gym_room` (
+  `id` int(11) NOT NULL,
+  `student_name` varchar(100) NOT NULL,
+  `student_email` varchar(100) DEFAULT NULL,
+  `booking_date` date NOT NULL,
+  `start_time` time NOT NULL,
+  `end_time` time NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `snooker_room`
+--
+
+CREATE TABLE `snooker_room` (
+  `id` int(11) NOT NULL,
+  `student_name` varchar(100) NOT NULL,
+  `student_email` varchar(100) DEFAULT NULL,
+  `booking_date` date NOT NULL,
+  `start_time` time NOT NULL,
+  `end_time` time NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `swimming_pool`
+--
+
+CREATE TABLE `swimming_pool` (
+  `id` int(11) NOT NULL,
+  `student_name` varchar(100) NOT NULL,
+  `student_email` varchar(100) DEFAULT NULL,
+  `booking_date` date NOT NULL,
+  `start_time` time NOT NULL,
+  `end_time` time NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tennis_court`
+--
+
+CREATE TABLE `tennis_court` (
+  `id` int(11) NOT NULL,
+  `student_name` varchar(100) NOT NULL,
+  `student_email` varchar(100) DEFAULT NULL,
+  `booking_date` date NOT NULL,
+  `start_time` time NOT NULL,
+  `end_time` time NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `track_field`
+--
+
+CREATE TABLE `track_field` (
+  `id` int(11) NOT NULL,
+  `student_name` varchar(100) NOT NULL,
+  `student_email` varchar(100) DEFAULT NULL,
+  `booking_date` date NOT NULL,
+  `start_time` time NOT NULL,
+  `end_time` time NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -43,16 +197,86 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `role`, `full_name`, `user_id`, `email`, `phone`, `password`, `created_at`) VALUES
-(1, 'student', 'John Tan', 'S12345', 'student@gmail.com', '0123456789', '123456', '2026-05-11 06:33:58'),
+(1, 'student', 'John Tan', 'S12345', 'student@gmail.com', '0123456789', '1234567', '2026-05-11 06:33:58'),
 (2, 'staff', 'Mr Lim', 'ST001', 'staff@gmail.com', '0112233445', '123456', '2026-05-11 06:33:58'),
 (3, 'admin', 'System Admin', 'AD001', 'admin@gmail.com', '0109988776', '123456', '2026-05-11 06:33:58'),
 (5, 'student', 'zzz', 'zzz', 'zzz@gmail.com', '', '$2y$10$kzHjVKrZnE5eHD3MDUI8/uaO.nLxvo2.LjO40VEUoIWIhXGyuO3yy', '2026-05-11 06:53:28'),
 (6, 'student', 'zz', 'zz', 'kuangkaize@gmail.com', '', '$2y$10$0PqvWQcV9wardic5alhvYOoEgm2/YCj4ktW8IgVFNh.amDO3r5QpW', '2026-05-11 07:47:15'),
 (7, 'student', 'zzzz', 'zzzz', 'kaizekuang@gmail.com', '', '$2y$10$m7WXnZVpTz/5zQKQCua04O6tHUZMjYBkdWk.0NBiy8Dd05eTn2lt6', '2026-05-11 08:15:00');
 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `volleyball_court`
+--
+
+CREATE TABLE `volleyball_court` (
+  `id` int(11) NOT NULL,
+  `student_name` varchar(100) NOT NULL,
+  `student_email` varchar(100) DEFAULT NULL,
+  `booking_date` date NOT NULL,
+  `start_time` time NOT NULL,
+  `end_time` time NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 --
 -- Indexes for dumped tables
 --
+
+--
+-- Indexes for table `badminton_court`
+--
+ALTER TABLE `badminton_court`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `basketball_court`
+--
+ALTER TABLE `basketball_court`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `facilities`
+--
+ALTER TABLE `facilities`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `futsal_court`
+--
+ALTER TABLE `futsal_court`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `gym_room`
+--
+ALTER TABLE `gym_room`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `snooker_room`
+--
+ALTER TABLE `snooker_room`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `swimming_pool`
+--
+ALTER TABLE `swimming_pool`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `tennis_court`
+--
+ALTER TABLE `tennis_court`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `track_field`
+--
+ALTER TABLE `track_field`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `users`
@@ -62,14 +286,80 @@ ALTER TABLE `users`
   ADD UNIQUE KEY `email` (`email`);
 
 --
+-- Indexes for table `volleyball_court`
+--
+ALTER TABLE `volleyball_court`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- AUTO_INCREMENT for dumped tables
 --
+
+--
+-- AUTO_INCREMENT for table `badminton_court`
+--
+ALTER TABLE `badminton_court`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `basketball_court`
+--
+ALTER TABLE `basketball_court`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `facilities`
+--
+ALTER TABLE `facilities`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+
+--
+-- AUTO_INCREMENT for table `futsal_court`
+--
+ALTER TABLE `futsal_court`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `gym_room`
+--
+ALTER TABLE `gym_room`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `snooker_room`
+--
+ALTER TABLE `snooker_room`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `swimming_pool`
+--
+ALTER TABLE `swimming_pool`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tennis_court`
+--
+ALTER TABLE `tennis_court`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `track_field`
+--
+ALTER TABLE `track_field`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+
+--
+-- AUTO_INCREMENT for table `volleyball_court`
+--
+ALTER TABLE `volleyball_court`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
