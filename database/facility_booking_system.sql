@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 14, 2026 at 05:53 AM
+-- Generation Time: May 14, 2026 at 06:08 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -197,12 +197,10 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `role`, `full_name`, `user_id`, `email`, `phone`, `password`, `created_at`) VALUES
-(1, 'student', 'John Tan', 'S12345', 'student@gmail.com', '0123456789', '1234567', '2026-05-11 06:33:58'),
-(2, 'staff', 'Mr Lim', 'ST001', 'staff@gmail.com', '0112233445', '123456', '2026-05-11 06:33:58'),
-(3, 'admin', 'System Admin', 'AD001', 'admin@gmail.com', '0109988776', '123456', '2026-05-11 06:33:58'),
 (5, 'student', 'zzz', 'zzz', 'zzz@gmail.com', '', '$2y$10$kzHjVKrZnE5eHD3MDUI8/uaO.nLxvo2.LjO40VEUoIWIhXGyuO3yy', '2026-05-11 06:53:28'),
 (6, 'student', 'zz', 'zz', 'kuangkaize@gmail.com', '', '$2y$10$0PqvWQcV9wardic5alhvYOoEgm2/YCj4ktW8IgVFNh.amDO3r5QpW', '2026-05-11 07:47:15'),
-(7, 'student', 'zzzz', 'zzzz', 'kaizekuang@gmail.com', '', '$2y$10$m7WXnZVpTz/5zQKQCua04O6tHUZMjYBkdWk.0NBiy8Dd05eTn2lt6', '2026-05-11 08:15:00');
+(7, 'student', 'zzzz', 'zzzz', 'kaizekuang@gmail.com', '', '$2y$10$m7WXnZVpTz/5zQKQCua04O6tHUZMjYBkdWk.0NBiy8Dd05eTn2lt6', '2026-05-11 08:15:00'),
+(11, 'student', 'student', 'default', 'student@gmail.com', '', '$2y$10$XKiBe7M39LWJyxCc/cVDJeySAdpMmz00JuepE9CauDHQK.Xds22Oq', '2026-05-14 04:07:52');
 
 -- --------------------------------------------------------
 
@@ -353,7 +351,7 @@ ALTER TABLE `track_field`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `volleyball_court`
