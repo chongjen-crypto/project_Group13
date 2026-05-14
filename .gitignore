@@ -1,0 +1,2 @@
+# Local SMTP secrets (copy from includes/mail_local.example.php)
+includes/mail_local.php

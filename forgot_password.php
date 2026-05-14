@@ -6,29 +6,7 @@
 
 session_start();
 require 'db.php';
-
-// -------------------------
-// PHPMailer Setup
-// -------------------------
-// This project currently does NOT include PHPMailer.
-// Choose ONE option below:
-//
-// OPTION A (Recommended): Install with Composer
-//   composer require phpmailer/phpmailer
-//   then keep: require __DIR__ . '/vendor/autoload.php';
-//
-// OPTION B: Manual download
-//   Download PHPMailer and place it in: /PHPMailer/src/
-//   then uncomment the 3 require lines below.
-//
-// require __DIR__ . '/vendor/autoload.php';
-//
-require __DIR__ . '/PHPMailer/src/Exception.php';
-require __DIR__ . '/PHPMailer/src/PHPMailer.php';
-require __DIR__ . '/PHPMailer/src/SMTP.php';
-//
-// use PHPMailer\PHPMailer\PHPMailer;
-// use PHPMailer\PHPMailer\Exception;
+require_once __DIR__ . '/includes/mail_helper.php';
 
 // -------------------------
 // Settings
@@ -107,40 +85,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['fp_attempts'] = 0;
                     $_SESSION['fp_verified'] = false;
 
-                    // Send code email using PHPMailer
-                    $mail_sent = false;
-                    $mail_error = '';
+                    $send = scholarhub_send_mail(
+                        $input_email,
+                        'Scholar Hub Password Reset Code',
+                        "Your verification code is: {$code}"
+                    );
 
-                    try {
-                        if (class_exists('PHPMailer\\PHPMailer\\PHPMailer')) {
-                            $mail = new PHPMailer\PHPMailer\PHPMailer(true);
-                            $mail->isSMTP();
-                            $mail->Host = 'smtp.gmail.com';
-                            $mail->SMTPAuth = true;
-                            $mail->Username = 'kuangkaize@gmail.com';
-                            $mail->Password = 'fryuizoyslpdftvr';
-                            $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
-                            $mail->Port = 587;
-
-                            $mail->setFrom('kuangkaize@gmail.com', 'Scholar Hub');
-                            $mail->addAddress($input_email);
-
-                            $mail->isHTML(false);
-                            $mail->Subject = 'Scholar Hub Password Reset Code';
-                            $mail->Body = "Your verification code is: {$code}";
-
-                            $mail->send();
-                            $mail_sent = true;
-                        } else {
-                            $mail_error = "PHPMailer is not installed. Please install PHPMailer (Composer or manual) and try again.";
-                        }
-                    } catch (Throwable $e) {
-                        $mail_error = $e->getMessage();
-                    }
-
-                    if (!$mail_sent) {
-                        // Keep step 1, show error
-                        $errors['general'] = $mail_error !== '' ? $mail_error : 'Failed to send email. Please try again.';
+                    if (!$send['success']) {
+                        clear_fp_session();
+                        $email = '';
+                        $errors['general'] = $send['error'] ?? 'Failed to send email. Please try again.';
                     } else {
                         $success = 'Verification code sent successfully';
                         set_fp_step(2);
