@@ -3,6 +3,7 @@
  * Scholar Hub — Snooker Room detail
  */
 $FACILITY = [
+    'facility_type'  => 'snooker',
     'name'           => 'Snooker Room',
     'booking_name'   => 'Snooker Room',
     'tagline'        => 'Quiet cue-sports room with professional tables.',

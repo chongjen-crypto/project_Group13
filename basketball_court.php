@@ -3,6 +3,7 @@
  * Scholar Hub — Basketball Court detail
  */
 $FACILITY = [
+    'facility_type'  => 'basketball',
     'name'           => 'Basketball Court',
     'booking_name'   => 'Basketball Court',
     'tagline'        => 'Full-size indoor court with FIBA-style markings.',

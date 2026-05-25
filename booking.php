@@ -31,7 +31,21 @@ $facility = booking_load_facility($conn, $facility_param, $type_param);
 $facility_error = '';
 
 if ($facility === null && ($facility_param !== '' || $type_param !== '')) {
-    $facility_error = 'Facility not found or is not available for booking.';
+    require_once __DIR__ . '/includes/facility_admin_helpers.php';
+    $checkType = $type_param !== '' ? $type_param : null;
+    if ($checkType === null && $facility_param !== '') {
+        $checkType = facility_type_from_display_name($facility_param);
+    }
+    if ($checkType !== null) {
+        $row = facility_fetch_by_type($conn, $checkType);
+        if ($row && !facility_is_bookable((string) $row['status'])) {
+            $facility_error = 'This facility is currently unavailable for booking.';
+        } else {
+            $facility_error = 'Facility not found.';
+        }
+    } else {
+        $facility_error = 'Facility not found or is not available for booking.';
+    }
 } elseif ($facility === null) {
     $facility_error = 'No facility selected. Please choose a facility from your dashboard.';
 }
@@ -56,7 +70,7 @@ if ($facility !== null) {
     if ($img === '') {
         $img = $facility_images[$ftype] ?? 'assets/trackfield.webp';
     }
-    $pricing = facility_pricing_get($ftype);
+    $pricing = facility_pricing_get($ftype, $conn);
     $booking_config = [
         'facility_id'   => (int) $facility['facility_id'],
         'facility_name' => (string) $facility['facility_name'],
@@ -251,6 +265,7 @@ $booked_flash = isset($_GET['booked']) && $_GET['booked'] === '1';
             </div>
             <div class="d-flex align-items-center gap-3 flex-wrap">
                 <div class="datetime-pill" id="liveDateTime"></div>
+                <?php include __DIR__ . '/includes/student_notification_bell.php'; ?>
                 <div class="avatar" title="<?php echo $student_email !== '' ? $student_email : $student_name; ?>">
                     <?php
                     $parts = preg_split('/\s+/', trim((string) ($_SESSION['full_name'] ?? 'S')));
@@ -720,5 +735,6 @@ $booked_flash = isset($_GET['booked']) && $_GET['booked'] === '1';
     enableSection(stepSummary, false);
 })();
 </script>
+<?php include __DIR__ . '/includes/student_notification_scripts.php'; ?>
 </body>
 </html>

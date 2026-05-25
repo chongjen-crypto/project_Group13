@@ -3,6 +3,7 @@
  * Scholar Hub — Gym Room detail
  */
 $FACILITY = [
+    'facility_type'  => 'gym',
     'name'           => 'Gym Room',
     'booking_name'   => 'Gym Room',
     'tagline'        => 'Strength and cardio equipment in a supervised training space.',

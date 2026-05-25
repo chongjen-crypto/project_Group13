@@ -57,7 +57,7 @@ if ($id > 0) {
     $row = mysqli_fetch_assoc($res);
 }
 
-$back_link = $_SESSION['role'] === 'admin' ? 'admin_booking_requests.php' : 'staff_dashboard.php';
+$back_link = $_SESSION['role'] === 'admin' ? 'admin_booking_requests.php' : 'staff_view_requests.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">

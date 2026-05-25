@@ -3,6 +3,7 @@
  * Scholar Hub — Volleyball Court detail
  */
 $FACILITY = [
+    'facility_type'  => 'volleyball',
     'name'           => 'Volleyball Court',
     'booking_name'   => 'Volleyball Court',
     'tagline'        => 'Indoor and sand options for recreational and club volleyball.',

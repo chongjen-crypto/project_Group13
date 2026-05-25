@@ -1,73 +1,16 @@
 <?php
 /**
- * Scholar Hub — Sport Facility Booking System
- * admin_dashboard.php — Admin home (UI only, demo data; no database)
+ * Scholar Hub — Admin dashboard
  */
 require_once __DIR__ . '/includes/admin_auth.php';
-require_once __DIR__ . '/includes/admin_notifications.php';
+require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/includes/dashboard_stats.php';
 
 $admin_nav_active = 'dashboard';
 $admin_page_title = 'Admin Dashboard';
+$overview_stats = stats_admin_overview($conn);
 
-// ---- POST: send announcement / notice (saved to data/admin_notifications.json) ----
-$announcement_sent = isset($_GET['sent']) && $_GET['sent'] === '1';
-$announcement_error = '';
-$announcement_title_prefill = '';
-$announcement_type_prefill = 'announcement';
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'send_announcement') {
-    $title = trim((string) ($_POST['announcement_title'] ?? ''));
-    $type = (string) ($_POST['announcement_type'] ?? 'announcement');
-    $announcement_title_prefill = $title;
-    $announcement_type_prefill = in_array($type, ['announcement', 'system'], true) ? $type : 'announcement';
-    if ($title === '') {
-        $announcement_error = 'Please enter a message.';
-    } else {
-        $len = function_exists('mb_strlen') ? mb_strlen($title, 'UTF-8') : strlen($title);
-        if ($len > 240) {
-            $announcement_error = 'Message is too long (max 240 characters).';
-        } else {
-            if (admin_notifications_add($title, $type)) {
-                header('Location: admin_dashboard.php?sent=1#notifications');
-                exit();
-            }
-            $announcement_error = 'Could not save. Ensure the project <code>data</code> folder exists and is writable.';
-        }
-    }
-}
-
-$announcements = admin_notifications_load();
-
-// ---- Overview stats (same card pattern as staff dashboard) ----
-$overview_stats = [
-    [
-        'label' => 'Total Students',
-        'value' => '842',
-        'icon' => 'bi-mortarboard',
-        'gradient' => 'linear-gradient(135deg,#3b82f6,#2563eb)',
-    ],
-    [
-        'label' => 'Total Staff',
-        'value' => '36',
-        'icon' => 'bi-person-workspace',
-        'gradient' => 'linear-gradient(135deg,#8b5cf6,#7c3aed)',
-    ],
-    [
-        'label' => 'Total Bookings',
-        'value' => '12,847',
-        'icon' => 'bi-calendar-check',
-        'gradient' => 'linear-gradient(135deg,#10b981,#059669)',
-    ],
-    [
-        'label' => 'Total Income',
-        'value' => 'RM 125,430.50',
-        'icon' => 'bi-cash-stack',
-        'gradient' => 'linear-gradient(135deg,#f59e0b,#d97706)',
-    ],
-];
-
-?>
-<!DOCTYPE html>
+?><!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -133,70 +76,28 @@ $overview_stats = [
                         <p>All venues &amp; status</p>
                     </a>
                 </div>
+                <div class="col-6 col-md-3">
+                    <a href="send_notification.php" class="card-soft quick-action-card d-block rounded overflow-hidden">
+                        <div class="icon-wrap" style="background: linear-gradient(135deg,#0d9488,#0f766e);"><i class="bi bi-send"></i></div>
+                        <h6>Send Notification</h6>
+                        <p>Message all students</p>
+                    </a>
+                </div>
             </div>
         </section>
 
-        <!-- ========================= Notifications ========================= -->
         <section id="notifications" class="mb-4">
-            <h2 class="section-title"><i class="bi bi-megaphone text-secondary"></i> Notifications</h2>
-
-            <div class="table-wrap mb-3">
-                <div class="p-3 border-bottom bg-light">
-                    <?php if ($announcement_sent): ?>
-                        <div class="alert alert-success py-2 mb-3 mb-md-0">Announcement posted successfully.</div>
-                    <?php endif; ?>
-                    <?php if ($announcement_error !== ''): ?>
-                        <div class="alert alert-danger py-2 mb-3"><?php echo $announcement_error; ?></div>
-                    <?php endif; ?>
-
-                    <form method="post" action="admin_dashboard.php#notifications" class="row g-3 align-items-end">
-                        <input type="hidden" name="action" value="send_announcement">
-                        <div class="col-12 col-lg-7">
-                            <label for="announcement_title" class="form-label small fw-semibold mb-1">Send announcement</label>
-                            <input
-                                type="text"
-                                name="announcement_title"
-                                id="announcement_title"
-                                class="form-control rounded-3"
-                                maxlength="240"
-                                placeholder="Message for students and staff…"
-                                value="<?php echo htmlspecialchars($announcement_title_prefill, ENT_QUOTES, 'UTF-8'); ?>"
-                            >
-                        </div>
-                        <div class="col-12 col-lg-3">
-                            <label for="announcement_type" class="form-label small fw-semibold mb-1">Type</label>
-                            <select name="announcement_type" id="announcement_type" class="form-select rounded-3">
-                                <option value="announcement"<?php echo $announcement_type_prefill === 'announcement' ? ' selected' : ''; ?>>Announcement</option>
-                                <option value="system"<?php echo $announcement_type_prefill === 'system' ? ' selected' : ''; ?>>System notice</option>
-                            </select>
-                        </div>
-                        <div class="col-12 col-lg-2">
-                            <button type="submit" class="btn btn-dark w-100 rounded-pill">
-                                <i class="bi bi-send me-1"></i>Post
-                            </button>
-                        </div>
-                    </form>
+            <h2 class="section-title"><i class="bi bi-megaphone text-secondary"></i> Student Notifications</h2>
+            <div class="table-wrap p-4">
+                <p class="text-muted small mb-3">Compose a title and message; students receive it in the bell icon on their pages.</p>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="send_notification.php" class="btn btn-dark rounded-pill px-4">
+                        <i class="bi bi-send me-1"></i> Send Notification
+                    </a>
+                    <a href="view_sent_notifications.php" class="btn btn-outline-dark rounded-pill px-4">
+                        <i class="bi bi-bell me-1"></i> View Sent
+                    </a>
                 </div>
-
-                <?php foreach ($announcements as $a): ?>
-                    <?php
-                    if ($a['type'] === 'maintenance') {
-                        $dotColor = '#f59e0b';
-                    } elseif ($a['type'] === 'system') {
-                        $dotColor = '#6366f1';
-                    } else {
-                        $dotColor = '#0ea5e9';
-                    }
-                    $typeLabel = $a['type'] === 'system' ? 'System notice' : ($a['type'] === 'maintenance' ? 'Maintenance' : 'Announcement');
-                    ?>
-                <div class="notif-item d-flex gap-3">
-                    <div class="notif-dot" style="background: <?php echo htmlspecialchars($dotColor, ENT_QUOTES, 'UTF-8'); ?>;"></div>
-                    <div class="flex-grow-1">
-                        <div class="fw-semibold"><?php echo htmlspecialchars($a['title'], ENT_QUOTES, 'UTF-8'); ?></div>
-                        <div class="small text-muted"><?php echo htmlspecialchars($a['time'], ENT_QUOTES, 'UTF-8'); ?> · <span class="badge bg-light text-secondary border"><?php echo htmlspecialchars($typeLabel, ENT_QUOTES, 'UTF-8'); ?></span></div>
-                    </div>
-                </div>
-                <?php endforeach; ?>
             </div>
         </section>
 
@@ -205,13 +106,13 @@ $overview_stats = [
             <h2 class="section-title"><i class="bi bi-gear-fill text-dark"></i> System Settings</h2>
             <div class="settings-placeholder">
                 <i class="bi bi-sliders fs-1 text-secondary mb-3 d-block"></i>
-                <p class="mb-0 fw-semibold text-dark">Configuration panel (demo)</p>
-                <p class="small mb-0 mt-2">SMTP, booking rules, and maintenance windows can be wired here later.</p>
+                <p class="mb-0 fw-semibold text-dark">Configuration panel</p>
+                <p class="small mb-0 mt-2">SMTP, booking rules, and maintenance windows can be configured here later.</p>
             </div>
         </section>
 
         <footer class="text-center text-muted small pb-4">
-            Scholar Hub — Sport Facility Booking System · Admin Dashboard (UI prototype)
+            Scholar Hub — Sport Facility Booking System · Admin Dashboard
         </footer>
     </main>
 </div>

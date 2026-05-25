@@ -25,87 +25,17 @@ $student_email = isset($_SESSION['email'])
     : '';
 
 require_once __DIR__ . '/includes/facility_pricing.php';
-
-// Facilities data (could later come from DB)
-$facilities = [
-    [
-        'name' => 'Badminton Court',
-        'desc' => 'Indoor air-conditioned court',
-        'status' => 'Available',
-        'status_class' => 'bg-success',
-        'image' => 'assets/badmintoncourt.webp',
-        'detail_url' => 'badminton.php',
-    ],
-    [
-        'name' => 'Tennis Court',
-        'desc' => 'Outdoor hard court with lighting',
-        'status' => 'Limited Slots',
-        'status_class' => 'bg-warning text-dark',
-        'image' => 'assets/tenniscourt.jpg',
-        'detail_url' => 'tennis.php',
-    ],
-    [
-        'name' => 'Swimming Pool',
-        'desc' => 'Olympic-size swimming pool',
-        'status' => 'Available',
-        'status_class' => 'bg-success',
-        'image' => 'assets/swimmingpool.jpg',
-        'detail_url' => 'swimming_pool.php',
-    ],
-    [
-        'name' => 'Gym Room',
-        'desc' => 'Modern gym equipment',
-        'status' => 'Maintenance',
-        'status_class' => 'bg-danger',
-        'image' => 'assets/gymroom.jpg',
-        'detail_url' => 'gym_room.php',
-    ],
-    [
-        'name' => 'Track Field',
-        'desc' => '400m synthetic running track',
-        'status' => 'Available',
-        'status_class' => 'bg-success',
-        'image' => 'assets/trackfield.webp',
-        'detail_url' => 'track_field.php',
-    ],
-    [
-        'name' => 'Volleyball Court',
-        'desc' => 'Sand and indoor options',
-        'status' => 'Limited Slots',
-        'status_class' => 'bg-warning text-dark',
-        'image' => 'assets/volleyballcourt.webp',
-        'detail_url' => 'volleyball_court.php',
-    ],
-    [
-        'name' => 'Basketball Court',
-        'desc' => 'Full-size indoor court',
-        'status' => 'Available',
-        'status_class' => 'bg-success',
-        'image' => 'assets/basketballcourt.jpeg',
-        'detail_url' => 'basketball_court.php',
-    ],
-    [
-        'name' => 'Snooker Room',
-        'desc' => 'Quiet room with professional tables',
-        'status' => 'Available',
-        'status_class' => 'bg-success',
-        'image' => 'assets/snookerroom.jpg',
-        'detail_url' => 'snooker_room.php',
-    ],
-    [
-        'name' => 'Futsal Court',
-        'desc' => 'Indoor 5-a-side pitch',
-        'status' => 'Maintenance',
-        'status_class' => 'bg-danger',
-        'image' => 'assets/futsalcourt.jpg',
-        'detail_url' => 'futsal.php',
-    ],
-];
-
-// Fetch recent bookings from DB
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/includes/dashboard_stats.php';
+require_once __DIR__ . '/includes/facility_admin_helpers.php';
+
+$user_id = (int) $_SESSION['user_id'];
+$student_overview_stats = stats_student_overview($conn, $user_id);
+
+// Facility cards loaded entirely from database (same records admin edits)
+$facilities = facilities_fetch_student_cards($conn);
+
 $recent_bookings = [];
-$user_id = (int)$_SESSION['user_id'];
 $sql = "SELECT b.facility_type, b.booking_date, b.start_time, b.end_time, b.booking_status,
         CASE WHEN b.facility_type = 'snooker' THEN 'Snooker Room'
              WHEN b.facility_type = 'gym' THEN 'Gym Room'
@@ -154,6 +84,7 @@ if ($stmt) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <?php include __DIR__ . '/includes/student_notification_styles.php'; ?>
 
     <style>
         /* =========================
@@ -561,6 +492,7 @@ include __DIR__ . '/includes/student_sidebar.php';
                 <div class="datetime-pill" id="liveDateTime">
                     <!-- Filled by JavaScript -->
                 </div>
+                <?php include __DIR__ . '/includes/student_notification_bell.php'; ?>
                 <div class="avatar" title="<?php echo $student_email !== '' ? $student_email : $student_name; ?>">
                     <?php
                     // Initials from full name
@@ -589,6 +521,25 @@ include __DIR__ . '/includes/student_sidebar.php';
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         <?php endif; ?>
+
+        <h2 class="section-title"><i class="bi bi-graph-up-arrow text-primary"></i> Overview</h2>
+        <div class="row g-3 mb-4">
+            <?php foreach ($student_overview_stats as $s): ?>
+            <div class="col-6 col-xl-3">
+                <div class="card-soft p-3 h-100">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded-3 d-flex align-items-center justify-content-center text-white flex-shrink-0" style="width:48px;height:48px;background:<?php echo htmlspecialchars($s['gradient'], ENT_QUOTES, 'UTF-8'); ?>;">
+                            <i class="bi <?php echo htmlspecialchars($s['icon'], ENT_QUOTES, 'UTF-8'); ?> fs-5"></i>
+                        </div>
+                        <div>
+                            <div class="fs-4 fw-bold lh-1"><?php echo htmlspecialchars($s['value'], ENT_QUOTES, 'UTF-8'); ?></div>
+                            <div class="small text-muted"><?php echo htmlspecialchars($s['label'], ENT_QUOTES, 'UTF-8'); ?></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
 
         <!-- ========================= QUICK ACTIONS ========================= -->
         <h2 class="section-title"><i class="bi bi-lightning-charge-fill text-warning"></i> Quick Actions</h2>
@@ -632,9 +583,13 @@ include __DIR__ . '/includes/student_sidebar.php';
         </div>
 
         <!-- ========================= AVAILABLE FACILITIES ========================= -->
-        <h2 class="section-title"><i class="bi bi-building text-secondary"></i> Available Facilities</h2>
+        <h2 class="section-title"><i class="bi bi-building text-secondary"></i> Facilities</h2>
+        <?php if (empty($facilities)): ?>
+            <div class="card-soft p-4 text-center text-muted">No facilities configured yet.</div>
+        <?php else: ?>
         <div class="row g-3 mb-4">
             <?php foreach ($facilities as $f): ?>
+            <?php $can_book = !empty($f['bookable']); ?>
             <div class="col-12 col-sm-6 col-lg-4">
                 <a href="<?php echo htmlspecialchars($f['detail_url'], ENT_QUOTES, 'UTF-8'); ?>" class="facility-card-link d-block h-100">
                     <div class="card-soft overflow-hidden h-100">
@@ -654,7 +609,7 @@ include __DIR__ . '/includes/student_sidebar.php';
                             </div>
                             <p><?php echo htmlspecialchars($f['desc'], ENT_QUOTES, 'UTF-8'); ?></p>
                             <?php
-                            $fp = facility_pricing_by_display_name($f['name']);
+                            $fp = facility_pricing_get($f['facility_type'] ?? '', $conn);
                             if ($fp !== null):
                             ?>
                             <p class="small mb-2">
@@ -664,15 +619,22 @@ include __DIR__ . '/includes/student_sidebar.php';
                                 </span>
                             </p>
                             <?php endif; ?>
+                            <?php if ($can_book): ?>
                             <span class="btn btn-dark w-100 btn-book d-inline-flex align-items-center justify-content-center">
-                                <i class="bi bi-calendar-check me-1"></i> Book Now
+                                <i class="bi bi-calendar-check me-1"></i> View &amp; Book
                             </span>
+                            <?php else: ?>
+                            <span class="btn btn-secondary w-100 d-inline-flex align-items-center justify-content-center">
+                                <i class="bi bi-slash-circle me-1"></i> Unavailable
+                            </span>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </a>
             </div>
             <?php endforeach; ?>
         </div>
+        <?php endif; ?>
 
         <!-- ========================= RECENT BOOKINGS ========================= -->
         <h2 class="section-title"><i class="bi bi-journal-text text-primary"></i> Recent Bookings</h2>
@@ -688,6 +650,11 @@ include __DIR__ . '/includes/student_sidebar.php';
                         </tr>
                     </thead>
                     <tbody>
+                        <?php if (empty($recent_bookings)): ?>
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-muted">No bookings yet.</td>
+                        </tr>
+                        <?php else: ?>
                         <?php foreach ($recent_bookings as $b): ?>
                         <tr>
                             <td class="ps-4 fw-semibold"><?php echo htmlspecialchars($b['facility'], ENT_QUOTES, 'UTF-8'); ?></td>
@@ -700,6 +667,7 @@ include __DIR__ . '/includes/student_sidebar.php';
                             </td>
                         </tr>
                         <?php endforeach; ?>
+                        <?php endif; ?>
                     </tbody>
                 </table>
             </div>
@@ -792,5 +760,6 @@ include __DIR__ . '/includes/student_sidebar.php';
     });
 })();
 </script>
+<?php include __DIR__ . '/includes/student_notification_scripts.php'; ?>
 </body>
 </html>

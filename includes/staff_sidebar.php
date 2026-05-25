@@ -14,8 +14,15 @@ if (!isset($staff_nav_active)) {
     <nav class="d-flex flex-column flex-grow-1">
         <a href="staff_dashboard.php" class="nav-link-sidebar <?php echo $staff_nav_active === 'dashboard' ? 'active' : ''; ?>">
             <i class="bi bi-speedometer2"></i> Dashboard
-        <a href="staff_view_requests.php" class="nav-link-sidebar <?php echo $staff_nav_active === 'requests' ? 'active' : ''; ?>" data-nav="requests">
+        </a>
+        <a href="staff_view_requests.php" class="nav-link-sidebar <?php echo $staff_nav_active === 'requests' ? 'active' : ''; ?>">
             <i class="bi bi-inbox"></i> View Booking Requests
+        </a>
+        <a href="send_notification.php" class="nav-link-sidebar <?php echo ($staff_nav_active === 'notify' || $staff_nav_active === 'notify_send') ? 'active' : ''; ?>">
+            <i class="bi bi-send"></i> Send Notification
+        </a>
+        <a href="view_sent_notifications.php" class="nav-link-sidebar <?php echo $staff_nav_active === 'notify_view' ? 'active' : ''; ?>">
+            <i class="bi bi-bell"></i> View Sent Notifications
         </a>
     </nav>
     <div class="sidebar-footer">

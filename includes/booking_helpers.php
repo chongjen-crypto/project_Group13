@@ -100,6 +100,9 @@ function booking_resolve_facility_type(string $facility_param, string $type_para
  */
 function booking_load_facility(mysqli $conn, string $facility_param, string $type_param = ''): ?array
 {
+    require_once __DIR__ . '/facility_admin_helpers.php';
+    facilities_ensure_schema($conn);
+
     $type = booking_resolve_facility_type($facility_param, $type_param);
     if ($type !== null) {
         $sql = "SELECT facility_id, facility_name, facility_type, description, image, location,

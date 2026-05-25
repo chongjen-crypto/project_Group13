@@ -131,7 +131,7 @@ if ($action === 'prepare_checkout' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    $pricing_meta = facility_pricing_get($facility_type);
+    $pricing_meta = facility_pricing_get($facility_type, $conn);
     if ($pricing_meta === null) {
         booking_json_response(['success' => false, 'message' => 'Pricing not configured for this facility.'], 400);
     }

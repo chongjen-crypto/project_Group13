@@ -3,6 +3,7 @@
  * Scholar Hub — Swimming Pool detail
  */
 $FACILITY = [
+    'facility_type'  => 'swimming',
     'name'           => 'Swimming Pool',
     'booking_name'   => 'Swimming Pool',
     'tagline'        => 'Olympic-size pool with dedicated lap and recreational lanes.',

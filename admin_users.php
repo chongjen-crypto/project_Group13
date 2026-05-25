@@ -61,10 +61,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($action === 'remove_user') {
         $user_id = (int) ($_POST['user_id'] ?? 0);
         if ($user_id <= 0) {
-            $error_msg = 'Invalid user ID.';
+            $error_msg = 'Please select a user to remove.';
+        } elseif ($user_id === (int) ($_SESSION['user_id'] ?? 0)) {
+            $error_msg = 'You cannot remove your own account.';
         } else {
-            // Check to ensure we are not deleting admin
-            $sql = "DELETE FROM users WHERE id = ? AND role != 'admin' LIMIT 1";
+            $sql = "DELETE FROM users WHERE id = ? AND role IN ('student', 'staff') LIMIT 1";
             $stmt = mysqli_prepare($conn, $sql);
             if ($stmt) {
                 mysqli_stmt_bind_param($stmt, 'i', $user_id);
@@ -72,9 +73,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (mysqli_stmt_affected_rows($stmt) === 1) {
                     header('Location: admin_users.php?msg=removed');
                     exit();
-                } else {
-                    $error_msg = 'Could not remove this user (or user is admin).';
                 }
+                $error_msg = 'Could not remove this user. They may have linked records or are an admin account.';
                 mysqli_stmt_close($stmt);
             }
         }
@@ -105,6 +105,24 @@ if ($res === false) {
     while ($row = mysqli_fetch_assoc($res)) {
         $staff_rows[] = $row;
     }
+}
+
+$removable_users = [];
+foreach ($student_rows as $row) {
+    $removable_users[] = [
+        'id' => (int) $row['id'],
+        'full_name' => $row['full_name'],
+        'email' => $row['email'],
+        'role' => 'student',
+    ];
+}
+foreach ($staff_rows as $row) {
+    $removable_users[] = [
+        'id' => (int) $row['id'],
+        'full_name' => $row['full_name'],
+        'email' => $row['email'],
+        'role' => 'staff',
+    ];
 }
 ?>
 <!DOCTYPE html>
@@ -222,6 +240,65 @@ if ($res === false) {
         </div>
 
     </main>
+</div>
+
+<!-- Fixed bottom-right: Remove user -->
+<div class="position-fixed bottom-0 end-0 p-3 p-md-4" style="z-index: 1030;">
+    <button
+        type="button"
+        class="btn btn-danger rounded-pill shadow px-4 py-2"
+        data-bs-toggle="modal"
+        data-bs-target="#removeUserModal"
+        <?php echo empty($removable_users) ? 'disabled' : ''; ?>
+    >
+        <i class="bi bi-person-x me-1"></i> Remove user
+    </button>
+</div>
+
+<!-- Modal: Remove student or staff -->
+<div class="modal fade" id="removeUserModal" tabindex="-1" aria-labelledby="removeUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="removeUserModalLabel">
+                    <i class="bi bi-person-x text-danger me-2"></i>Remove user
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="admin_users.php" onsubmit="return confirm('Permanently remove this user account? Their bookings and related data may also be affected.');">
+                <input type="hidden" name="action" value="remove_user">
+                <div class="modal-body pt-2">
+                    <p class="small text-muted">Select a <strong>student</strong> or <strong>staff</strong> account to delete. Admin accounts cannot be removed here.</p>
+                    <label for="remove_user_id" class="form-label">User</label>
+                    <select name="user_id" id="remove_user_id" class="form-select rounded-3" required>
+                        <option value="" disabled selected>Select user…</option>
+                        <?php if (!empty($student_rows)): ?>
+                        <optgroup label="Students">
+                            <?php foreach ($student_rows as $row): ?>
+                            <option value="<?php echo (int) $row['id']; ?>">
+                                <?php echo htmlspecialchars($row['full_name'], ENT_QUOTES, 'UTF-8'); ?> — <?php echo htmlspecialchars($row['email'], ENT_QUOTES, 'UTF-8'); ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </optgroup>
+                        <?php endif; ?>
+                        <?php if (!empty($staff_rows)): ?>
+                        <optgroup label="Staff">
+                            <?php foreach ($staff_rows as $row): ?>
+                            <option value="<?php echo (int) $row['id']; ?>">
+                                <?php echo htmlspecialchars($row['full_name'], ENT_QUOTES, 'UTF-8'); ?> — <?php echo htmlspecialchars($row['email'], ENT_QUOTES, 'UTF-8'); ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </optgroup>
+                        <?php endif; ?>
+                    </select>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger rounded-pill px-4">Remove user</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 <!-- Modal: Promote to staff -->

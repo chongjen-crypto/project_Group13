@@ -3,6 +3,7 @@
  * Scholar Hub — Tennis Court detail
  */
 $FACILITY = [
+    'facility_type'  => 'tennis',
     'name'           => 'Tennis Court',
     'booking_name'   => 'Tennis Court',
     'tagline'        => 'Outdoor hard courts with evening floodlighting.',

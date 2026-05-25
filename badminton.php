@@ -3,6 +3,7 @@
  * Scholar Hub — Badminton Court detail
  */
 $FACILITY = [
+    'facility_type'  => 'badminton',
     'name'           => 'Badminton Court',
     'booking_name'   => 'Badminton Court',
     'tagline'        => 'Indoor air-conditioned courts for training and competition.',

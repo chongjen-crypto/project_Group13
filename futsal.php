@@ -3,6 +3,7 @@
  * Scholar Hub — Futsal Court detail
  */
 $FACILITY = [
+    'facility_type'  => 'futsal',
     'name'           => 'Futsal Court',
     'booking_name'   => 'Futsal Court',
     'tagline'        => 'Indoor 5-a-side pitch with perimeter boards.',

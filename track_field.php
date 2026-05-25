@@ -3,6 +3,7 @@
  * Scholar Hub — Track Field detail
  */
 $FACILITY = [
+    'facility_type'  => 'track',
     'name'           => 'Track Field',
     'booking_name'   => 'Track Field',
     'tagline'        => '400 m synthetic track and infield for athletics training.',

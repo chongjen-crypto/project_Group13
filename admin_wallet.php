@@ -1,19 +1,16 @@
 <?php
 /**
- * Scholar Hub — Admin: Wallet overview (demo data).
+ * Scholar Hub — Admin: Wallet overview (from paid bookings).
  */
 require_once __DIR__ . '/includes/admin_auth.php';
+require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/includes/dashboard_stats.php';
 
 $admin_nav_active = 'wallet';
 $admin_page_title = 'Wallet Overview';
 
-$total_wallet_demo = 48250.75;
-$dummy_transactions = [
-    ['id' => 'TX-9201', 'user' => 'Ahmad Zulkarnain', 'type' => 'Top-up', 'amount' => 50.00, 'date' => '2026-05-13 09:14'],
-    ['id' => 'TX-9200', 'user' => 'Wei Ming', 'type' => 'Booking Payment', 'amount' => -12.50, 'date' => '2026-05-13 08:02'],
-    ['id' => 'TX-9198', 'user' => 'Nur Hidayah', 'type' => 'Refund', 'amount' => 8.00, 'date' => '2026-05-12 16:41'],
-    ['id' => 'TX-9195', 'user' => 'Sarah Lim', 'type' => 'Top-up', 'amount' => 100.00, 'date' => '2026-05-12 11:20'],
-];
+$wallet = stats_wallet_overview($conn);
+$transactions = $wallet['transactions'];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -37,22 +34,21 @@ $dummy_transactions = [
         <div class="row g-3 mb-4">
             <div class="col-md-4">
                 <div class="analytics-card border border-primary border-opacity-25">
-                    <div class="text-muted small text-uppercase fw-bold">Total Wallet Amount</div>
-                    <div class="fs-4 fw-bold mt-2">RM <?php echo number_format($total_wallet_demo, 2); ?></div>
-                    <small class="text-muted">Demo aggregate</small>
+                    <div class="text-muted small text-uppercase fw-bold">Total Paid (All Time)</div>
+                    <div class="fs-4 fw-bold mt-2">RM <?php echo number_format($wallet['total_income'], 2); ?></div>
+                    <small class="text-muted">From completed booking payments</small>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="analytics-card">
-                    <div class="text-muted small text-uppercase fw-bold">Recent Transactions</div>
-                    <div class="fs-4 fw-bold mt-2"><?php echo count($dummy_transactions); ?> <span class="fs-6 text-muted fw-normal">(shown)</span></div>
+                    <div class="text-muted small text-uppercase fw-bold">Paid Transactions</div>
+                    <div class="fs-4 fw-bold mt-2"><?php echo (int) $wallet['paid_count']; ?></div>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="analytics-card">
-                    <div class="text-muted small text-uppercase fw-bold">Student Top-ups (today)</div>
-                    <div class="fs-4 fw-bold mt-2 text-success">RM 1,240.00</div>
-                    <small class="text-muted">Demo</small>
+                    <div class="text-muted small text-uppercase fw-bold">Payments Today</div>
+                    <div class="fs-4 fw-bold mt-2 text-success">RM <?php echo number_format($wallet['topups_today'], 2); ?></div>
                 </div>
             </div>
         </div>
@@ -71,23 +67,25 @@ $dummy_transactions = [
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($dummy_transactions as $tx): ?>
+                        <?php if (empty($transactions)): ?>
                         <tr>
-                            <td class="ps-4 font-monospace small"><?php echo htmlspecialchars($tx['id'], ENT_QUOTES, 'UTF-8'); ?></td>
-                            <td><?php echo htmlspecialchars($tx['user'], ENT_QUOTES, 'UTF-8'); ?></td>
-                            <td><span class="badge bg-light text-dark border"><?php echo htmlspecialchars($tx['type'], ENT_QUOTES, 'UTF-8'); ?></span></td>
-                            <td class="<?php echo $tx['amount'] >= 0 ? 'text-success' : 'text-danger'; ?> fw-semibold">
-                                <?php echo ($tx['amount'] >= 0 ? '+' : '') . 'RM ' . number_format(abs($tx['amount']), 2); ?>
-                            </td>
-                            <td class="pe-4 text-muted small"><?php echo htmlspecialchars($tx['date'], ENT_QUOTES, 'UTF-8'); ?></td>
+                            <td colspan="5" class="text-center py-4 text-muted">No payment transactions yet.</td>
                         </tr>
-                        <?php endforeach; ?>
+                        <?php else: ?>
+                            <?php foreach ($transactions as $tx): ?>
+                            <tr>
+                                <td class="ps-4 font-monospace small"><?php echo htmlspecialchars($tx['id'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                <td><?php echo htmlspecialchars($tx['user'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                <td><span class="badge bg-light text-dark border"><?php echo htmlspecialchars($tx['type'], ENT_QUOTES, 'UTF-8'); ?></span></td>
+                                <td class="text-success fw-semibold">RM <?php echo number_format($tx['amount'], 2); ?></td>
+                                <td class="pe-4 text-muted small"><?php echo htmlspecialchars($tx['date'], ENT_QUOTES, 'UTF-8'); ?></td>
+                            </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
                     </tbody>
                 </table>
             </div>
         </div>
-
-        <p class="text-center text-muted small pb-3 mb-0">Demo data — connect wallet tables when ready.</p>
     </main>
 </div>
 

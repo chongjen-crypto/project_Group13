@@ -24,9 +24,33 @@ function facility_pricing_catalog(): array
 /**
  * @return array{amount: float, mode: string, label: string, facility_name: string}|null
  */
-function facility_pricing_get(string $facility_type): ?array
+function facility_pricing_get(string $facility_type, ?mysqli $conn = null): ?array
 {
     $type = strtolower(trim($facility_type));
+
+    if ($conn !== null) {
+        require_once __DIR__ . '/facility_admin_helpers.php';
+        facilities_ensure_schema($conn);
+        $row = facility_fetch_by_type($conn, $type);
+        if ($row) {
+            $defaults = facility_catalog_pricing_defaults($type);
+            $amount = isset($row['price_amount']) ? (float) $row['price_amount'] : (float) $defaults['amount'];
+            if ($amount <= 0) {
+                $amount = (float) $defaults['amount'];
+            }
+            $mode = (string) ($row['price_mode'] ?? $defaults['mode']);
+            if (!in_array($mode, ['hourly', 'entry'], true)) {
+                $mode = (string) $defaults['mode'];
+            }
+            return [
+                'amount' => $amount,
+                'mode' => $mode,
+                'label' => facility_price_label($mode),
+                'facility_name' => (string) ($row['facility_name'] ?? facility_display_name($type)),
+            ];
+        }
+    }
+
     $catalog = facility_pricing_catalog();
     return $catalog[$type] ?? null;
 }
@@ -35,14 +59,14 @@ function facility_pricing_get(string $facility_type): ?array
  * Resolve pricing from facility display name (dashboard / detail pages).
  * @return array{amount: float, mode: string, label: string, facility_name: string, facility_type: string}|null
  */
-function facility_pricing_by_display_name(string $display_name): ?array
+function facility_pricing_by_display_name(string $display_name, ?mysqli $conn = null): ?array
 {
     require_once __DIR__ . '/booking_helpers.php';
     $type = booking_resolve_facility_type($display_name, '');
     if ($type === null) {
         return null;
     }
-    $p = facility_pricing_get($type);
+    $p = facility_pricing_get($type, $conn);
     if ($p === null) {
         return null;
     }

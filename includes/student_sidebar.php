@@ -1,6 +1,6 @@
 <?php
 /**
- * Student sidebar (set $student_nav_active: dashboard|book|history|wallet|profile)
+ * Student sidebar (set $student_nav_active: dashboard|book|history|wallet|notifications)
  */
 if (!isset($student_nav_active)) {
     $student_nav_active = 'dashboard';
@@ -24,7 +24,9 @@ if (!isset($student_nav_active)) {
         <a href="payment.php" class="nav-link-sidebar <?php echo $student_nav_active === 'wallet' ? 'active' : ''; ?>">
             <i class="bi bi-wallet2"></i> Wallet
         </a>
-
+        <a href="student_notifications.php" class="nav-link-sidebar <?php echo $student_nav_active === 'notifications' ? 'active' : ''; ?>">
+            <i class="bi bi-bell"></i> Notifications
+        </a>
     </nav>
     <div class="sidebar-footer">
         <a href="logout.php" class="nav-link-sidebar text-danger" style="background: rgba(220,53,69,0.12);">

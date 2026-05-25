@@ -101,6 +101,7 @@ if ($stmt) {
 
             <div class="d-flex align-items-center gap-3 flex-wrap">
                 <div class="datetime-pill" id="liveDateTime"></div>
+                <?php include __DIR__ . '/includes/student_notification_bell.php'; ?>
                 <div class="avatar" title="<?php echo $student_email !== '' ? $student_email : $student_name; ?>">
                     <?php
                     $parts = preg_split('/\s+/', trim($_SESSION['full_name'] ?? 'S'));
@@ -228,5 +229,6 @@ if ($stmt) {
     }
 })();
 </script>
+<?php include __DIR__ . '/includes/student_notification_scripts.php'; ?>
 </body>
 </html>

@@ -17,6 +17,13 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'student') {
     exit();
 }
 
+require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/facility_admin_helpers.php';
+
+if (!empty($FACILITY['facility_type'])) {
+    $FACILITY = facility_merge_page_config($conn, (string) $FACILITY['facility_type'], $FACILITY);
+}
+
 /** @var array $FACILITY */
 $F = $FACILITY;
 
@@ -38,11 +45,15 @@ $capacity       = $F['capacity'] ?? '';
 $equipment      = $F['equipment'] ?? [];
 $booking_name   = $F['booking_name'] ?? $name;
 
-$booking_href = 'booking.php?facility=' . rawurlencode($booking_name);
+$bookable = !empty($F['bookable']);
+$booking_href = 'booking.php?type=' . rawurlencode((string) ($F['facility_type'] ?? ''));
+if ($booking_href === 'booking.php?type=') {
+    $booking_href = 'booking.php?facility=' . rawurlencode($booking_name);
+}
 $page_title = h($name) . ' — Scholar Hub';
 
 require_once __DIR__ . '/facility_pricing.php';
-$facility_pricing = facility_pricing_by_display_name($booking_name);
+$facility_pricing = facility_pricing_by_display_name($booking_name, $conn);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -362,12 +373,22 @@ $facility_pricing = facility_pricing_by_display_name($booking_name);
     <!-- Book CTA -->
     <section class="book-bar d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
         <div>
-            <div class="fw-bold fs-5 mb-1">Ready to book?</div>
-            <div class="opacity-75 small">You will be taken to the booking form for this facility.</div>
+            <div class="fw-bold fs-5 mb-1"><?php echo $bookable ? 'Ready to book?' : 'Currently unavailable'; ?></div>
+            <div class="opacity-75 small">
+                <?php if ($bookable): ?>
+                    You will be taken to the booking form for this facility.
+                <?php else: ?>
+                    This facility is not available for booking right now. Please check back later.
+                <?php endif; ?>
+            </div>
         </div>
+        <?php if ($bookable): ?>
         <a href="<?php echo h($booking_href); ?>" class="btn btn-light btn-book-main text-dark">
             <i class="bi bi-calendar2-plus me-2"></i>Book Now
         </a>
+        <?php else: ?>
+        <span class="btn btn-secondary btn-book-main disabled">Unavailable</span>
+        <?php endif; ?>
     </section>
 
     <footer class="text-center text-muted small mt-5 mb-3">

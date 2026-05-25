@@ -27,8 +27,11 @@ if (!isset($admin_nav_active)) {
         <a href="admin_wallet.php" class="nav-link-sidebar <?php echo $admin_nav_active === 'wallet' ? 'active' : ''; ?>">
             <i class="bi bi-wallet2"></i> Wallet Overview
         </a>
-        <a href="admin_dashboard.php#notifications" class="nav-link-sidebar" data-scroll="notifications">
-            <i class="bi bi-bell"></i> Notifications
+        <a href="send_notification.php" class="nav-link-sidebar <?php echo ($admin_nav_active === 'notify' || $admin_nav_active === 'notify_send') ? 'active' : ''; ?>">
+            <i class="bi bi-send"></i> Send Notification
+        </a>
+        <a href="view_sent_notifications.php" class="nav-link-sidebar <?php echo $admin_nav_active === 'notify_view' ? 'active' : ''; ?>">
+            <i class="bi bi-bell"></i> View Sent Notifications
         </a>
         <a href="admin_dashboard.php#system-settings" class="nav-link-sidebar" data-scroll="system-settings">
             <i class="bi bi-gear"></i> System Settings
