@@ -87,6 +87,13 @@ function facility_canonical_meta(): array
 
 function facilities_ensure_schema(mysqli $conn): void
 {
+    static $done = false;
+    static $initializing = false;
+    if ($done || $initializing) {
+        return;
+    }
+    $initializing = true;
+
     $sql = "CREATE TABLE IF NOT EXISTS facilities (
         facility_id INT AUTO_INCREMENT PRIMARY KEY,
         facility_name VARCHAR(100) NOT NULL,
@@ -151,6 +158,9 @@ function facilities_ensure_schema(mysqli $conn): void
     }
 
     facilities_backfill_price_rules($conn);
+
+    $initializing = false;
+    $done = true;
 }
 
 function facilities_ensure_columns(mysqli $conn): void
@@ -220,7 +230,18 @@ function facility_rules_to_text(array $rules): string
 function facilities_backfill_price_rules(mysqli $conn): void
 {
     foreach (facility_canonical_meta() as $type => $meta) {
-        $row = facility_fetch_by_type($conn, $type);
+        $stmt = mysqli_prepare(
+            $conn,
+            'SELECT price_amount, price_mode, rules FROM facilities WHERE facility_type = ? ORDER BY facility_id ASC LIMIT 1'
+        );
+        if (!$stmt) {
+            continue;
+        }
+        mysqli_stmt_bind_param($stmt, 's', $type);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $row = $res ? mysqli_fetch_assoc($res) : null;
+        mysqli_stmt_close($stmt);
         if (!$row) {
             continue;
         }
@@ -249,15 +270,6 @@ function facilities_backfill_price_rules(mysqli $conn): void
             mysqli_stmt_close($stmt);
         }
 
-        $stmtAll = mysqli_prepare(
-            $conn,
-            'UPDATE facilities SET price_amount = ?, price_mode = ?, rules = ? WHERE facility_type = ?'
-        );
-        if ($stmtAll && $rulesText !== '') {
-            mysqli_stmt_bind_param($stmtAll, 'dsss', $priceAmount, $priceMode, $rulesText, $type);
-            mysqli_stmt_execute($stmtAll);
-            mysqli_stmt_close($stmtAll);
-        }
     }
 }
 
@@ -373,8 +385,6 @@ function facility_admin_edit_payload(array $card): array
  */
 function facility_fetch_by_type(mysqli $conn, string $facility_type): ?array
 {
-    facilities_ensure_schema($conn);
-
     $stmt = mysqli_prepare(
         $conn,
         'SELECT * FROM facilities WHERE facility_type = ? ORDER BY facility_id ASC LIMIT 1'
