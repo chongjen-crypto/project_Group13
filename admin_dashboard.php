@@ -4,9 +4,39 @@
  * admin_dashboard.php — Admin home (UI only, demo data; no database)
  */
 require_once __DIR__ . '/includes/admin_auth.php';
+require_once __DIR__ . '/includes/admin_notifications.php';
 
 $admin_nav_active = 'dashboard';
 $admin_page_title = 'Admin Dashboard';
+
+// ---- POST: send announcement / notice (saved to data/admin_notifications.json) ----
+$announcement_sent = isset($_GET['sent']) && $_GET['sent'] === '1';
+$announcement_error = '';
+$announcement_title_prefill = '';
+$announcement_type_prefill = 'announcement';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'send_announcement') {
+    $title = trim((string) ($_POST['announcement_title'] ?? ''));
+    $type = (string) ($_POST['announcement_type'] ?? 'announcement');
+    $announcement_title_prefill = $title;
+    $announcement_type_prefill = in_array($type, ['announcement', 'system'], true) ? $type : 'announcement';
+    if ($title === '') {
+        $announcement_error = 'Please enter a message.';
+    } else {
+        $len = function_exists('mb_strlen') ? mb_strlen($title, 'UTF-8') : strlen($title);
+        if ($len > 240) {
+            $announcement_error = 'Message is too long (max 240 characters).';
+        } else {
+            if (admin_notifications_add($title, $type)) {
+                header('Location: admin_dashboard.php?sent=1#notifications');
+                exit();
+            }
+            $announcement_error = 'Could not save. Ensure the project <code>data</code> folder exists and is writable.';
+        }
+    }
+}
+
+$announcements = admin_notifications_load();
 
 // ---- Overview stats (same card pattern as staff dashboard) ----
 $overview_stats = [
@@ -36,11 +66,6 @@ $overview_stats = [
     ],
 ];
 
-$announcements = [
-    ['title' => 'Semester booking window opens Monday', 'time' => '2 hours ago', 'type' => 'announcement'],
-    ['title' => 'Swimming pool lane 3 closed for maintenance', 'time' => '5 hours ago', 'type' => 'maintenance'],
-    ['title' => 'System update scheduled — 02:00 AM', 'time' => 'Yesterday', 'type' => 'system'],
-];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -88,10 +113,10 @@ $announcements = [
                     </a>
                 </div>
                 <div class="col-6 col-md-3">
-                    <a href="admin_booking_reports.php" class="card-soft quick-action-card d-block rounded overflow-hidden">
-                        <div class="icon-wrap" style="background: linear-gradient(135deg,#059669,#047857);"><i class="bi bi-file-earmark-bar-graph-fill"></i></div>
-                        <h6>Booking Reports</h6>
-                        <p>Analytics &amp; trends</p>
+                    <a href="admin_booking_requests.php" class="card-soft quick-action-card d-block rounded overflow-hidden">
+                        <div class="icon-wrap" style="background: linear-gradient(135deg,#059669,#047857);"><i class="bi bi-inbox"></i></div>
+                        <h6>Booking Requests</h6>
+                        <p>Pending requests</p>
                     </a>
                 </div>
                 <div class="col-6 col-md-3">
@@ -114,7 +139,45 @@ $announcements = [
         <!-- ========================= Notifications ========================= -->
         <section id="notifications" class="mb-4">
             <h2 class="section-title"><i class="bi bi-megaphone text-secondary"></i> Notifications</h2>
-            <div class="table-wrap">
+
+            <div class="table-wrap mb-3">
+                <div class="p-3 border-bottom bg-light">
+                    <?php if ($announcement_sent): ?>
+                        <div class="alert alert-success py-2 mb-3 mb-md-0">Announcement posted successfully.</div>
+                    <?php endif; ?>
+                    <?php if ($announcement_error !== ''): ?>
+                        <div class="alert alert-danger py-2 mb-3"><?php echo $announcement_error; ?></div>
+                    <?php endif; ?>
+
+                    <form method="post" action="admin_dashboard.php#notifications" class="row g-3 align-items-end">
+                        <input type="hidden" name="action" value="send_announcement">
+                        <div class="col-12 col-lg-7">
+                            <label for="announcement_title" class="form-label small fw-semibold mb-1">Send announcement</label>
+                            <input
+                                type="text"
+                                name="announcement_title"
+                                id="announcement_title"
+                                class="form-control rounded-3"
+                                maxlength="240"
+                                placeholder="Message for students and staff…"
+                                value="<?php echo htmlspecialchars($announcement_title_prefill, ENT_QUOTES, 'UTF-8'); ?>"
+                            >
+                        </div>
+                        <div class="col-12 col-lg-3">
+                            <label for="announcement_type" class="form-label small fw-semibold mb-1">Type</label>
+                            <select name="announcement_type" id="announcement_type" class="form-select rounded-3">
+                                <option value="announcement"<?php echo $announcement_type_prefill === 'announcement' ? ' selected' : ''; ?>>Announcement</option>
+                                <option value="system"<?php echo $announcement_type_prefill === 'system' ? ' selected' : ''; ?>>System notice</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-lg-2">
+                            <button type="submit" class="btn btn-dark w-100 rounded-pill">
+                                <i class="bi bi-send me-1"></i>Post
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
                 <?php foreach ($announcements as $a): ?>
                     <?php
                     if ($a['type'] === 'maintenance') {
@@ -124,7 +187,7 @@ $announcements = [
                     } else {
                         $dotColor = '#0ea5e9';
                     }
-                    $typeLabel = ucfirst($a['type']);
+                    $typeLabel = $a['type'] === 'system' ? 'System notice' : ($a['type'] === 'maintenance' ? 'Maintenance' : 'Announcement');
                     ?>
                 <div class="notif-item d-flex gap-3">
                     <div class="notif-dot" style="background: <?php echo htmlspecialchars($dotColor, ENT_QUOTES, 'UTF-8'); ?>;"></div>
@@ -132,7 +195,6 @@ $announcements = [
                         <div class="fw-semibold"><?php echo htmlspecialchars($a['title'], ENT_QUOTES, 'UTF-8'); ?></div>
                         <div class="small text-muted"><?php echo htmlspecialchars($a['time'], ENT_QUOTES, 'UTF-8'); ?> · <span class="badge bg-light text-secondary border"><?php echo htmlspecialchars($typeLabel, ENT_QUOTES, 'UTF-8'); ?></span></div>
                     </div>
-                    <button type="button" class="btn btn-sm btn-link text-decoration-none text-muted">Dismiss</button>
                 </div>
                 <?php endforeach; ?>
             </div>

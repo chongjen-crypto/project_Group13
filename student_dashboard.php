@@ -24,6 +24,8 @@ $student_email = isset($_SESSION['email'])
     ? htmlspecialchars($_SESSION['email'], ENT_QUOTES, 'UTF-8')
     : '';
 
+require_once __DIR__ . '/includes/facility_pricing.php';
+
 // Facilities data (could later come from DB)
 $facilities = [
     [
@@ -100,12 +102,46 @@ $facilities = [
     ],
 ];
 
-// Dummy recent bookings (replace with DB query later)
-$recent_bookings = [
-    ['facility' => 'Badminton Court', 'date' => '2026-05-12', 'time' => '14:00 - 15:00', 'status' => 'Approved', 'status_class' => 'text-bg-success'],
-    ['facility' => 'Swimming Pool', 'date' => '2026-05-10', 'time' => '09:00 - 10:00', 'status' => 'Pending', 'status_class' => 'text-bg-warning'],
-    ['facility' => 'Gym Room', 'date' => '2026-05-08', 'time' => '18:00 - 19:00', 'status' => 'Rejected', 'status_class' => 'text-bg-danger'],
-];
+// Fetch recent bookings from DB
+require_once __DIR__ . '/db.php';
+$recent_bookings = [];
+$user_id = (int)$_SESSION['user_id'];
+$sql = "SELECT b.facility_type, b.booking_date, b.start_time, b.end_time, b.booking_status,
+        CASE WHEN b.facility_type = 'snooker' THEN 'Snooker Room'
+             WHEN b.facility_type = 'gym' THEN 'Gym Room'
+             WHEN b.facility_type = 'swimming' THEN 'Swimming Pool'
+             WHEN b.facility_type = 'track' THEN 'Track Field'
+             WHEN b.facility_type = 'badminton' THEN 'Badminton Court'
+             WHEN b.facility_type = 'basketball' THEN 'Basketball Court'
+             WHEN b.facility_type = 'futsal' THEN 'Futsal Court'
+             WHEN b.facility_type = 'tennis' THEN 'Tennis Court'
+             WHEN b.facility_type = 'volleyball' THEN 'Volleyball Court'
+             ELSE b.facility_type END as facility_name
+        FROM bookings b
+        WHERE b.user_id = ?
+        ORDER BY b.created_at DESC LIMIT 5";
+$stmt = mysqli_prepare($conn, $sql);
+if ($stmt) {
+    mysqli_stmt_bind_param($stmt, "i", $user_id);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    while ($row = mysqli_fetch_assoc($res)) {
+        $status_class = 'text-bg-secondary';
+        if ($row['booking_status'] === 'pending') $status_class = 'text-bg-warning';
+        elseif ($row['booking_status'] === 'approved') $status_class = 'text-bg-success';
+        elseif ($row['booking_status'] === 'rejected') $status_class = 'text-bg-danger';
+        elseif ($row['booking_status'] === 'cancelled') $status_class = 'text-bg-dark';
+
+        $recent_bookings[] = [
+            'facility' => $row['facility_name'],
+            'date' => $row['booking_date'],
+            'time' => substr($row['start_time'], 0, 5) . ' - ' . substr($row['end_time'], 0, 5),
+            'status' => ucfirst($row['booking_status']),
+            'status_class' => $status_class
+        ];
+    }
+    mysqli_stmt_close($stmt);
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -499,38 +535,10 @@ $recent_bookings = [
 <body>
 
 <!-- ========================= SIDEBAR ========================= -->
-<aside class="sidebar" id="sidebar">
-    <div class="sidebar-brand">
-        <i class="bi bi-mortarboard-fill me-1"></i> SCHOLAR HUB
-        <small>Sport Facility Booking</small>
-    </div>
-
-    <nav class="d-flex flex-column flex-grow-1">
-        <a href="student_dashboard.php" class="nav-link-sidebar active" data-nav="dashboard">
-            <i class="bi bi-speedometer2"></i> Dashboard
-        </a>
-        <a href="#" class="nav-link-sidebar" data-nav="book">
-            <i class="bi bi-calendar2-plus"></i> Book Facility
-        </a>
-        <a href="#" class="nav-link-sidebar" data-nav="history">
-            <i class="bi bi-clock-history"></i> Booking History
-        </a>
-        <a href="#" class="nav-link-sidebar" data-nav="wallet">
-            <i class="bi bi-wallet2"></i> Wallet
-        </a>
-        <a href="#" class="nav-link-sidebar" data-nav="profile">
-            <i class="bi bi-person-circle"></i> Profile
-        </a>
-    </nav>
-
-    <div class="sidebar-footer">
-        <a href="logout.php" class="nav-link-sidebar text-danger" style="background: rgba(220,53,69,0.12);">
-            <i class="bi bi-box-arrow-right"></i> Logout
-        </a>
-    </div>
-</aside>
-
-<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+<?php
+$student_nav_active = 'dashboard';
+include __DIR__ . '/includes/student_sidebar.php';
+?>
 
 <!-- ========================= MAIN ========================= -->
 <div class="main-wrap" id="mainWrap">
@@ -570,11 +578,23 @@ $recent_bookings = [
 
     <main class="content-area">
 
+        <?php if (isset($_GET['booked']) && $_GET['booked'] === '1'): ?>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle me-2"></i>
+                <?php if (isset($_GET['paid']) && $_GET['paid'] === '1'): ?>
+                    Payment received. Your booking is <strong>pending</strong> staff approval.
+                <?php else: ?>
+                    Your booking was submitted and is <strong>pending</strong> staff approval.
+                <?php endif; ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <?php endif; ?>
+
         <!-- ========================= QUICK ACTIONS ========================= -->
         <h2 class="section-title"><i class="bi bi-lightning-charge-fill text-warning"></i> Quick Actions</h2>
         <div class="row g-3 mb-4">
             <div class="col-6 col-md-3">
-                <a href="#" class="card-soft quick-action-card">
+                <a href="booking.php" class="card-soft quick-action-card">
                     <div class="icon-wrap" style="background: linear-gradient(135deg,#111827,#374151);">
                         <i class="bi bi-calendar2-plus"></i>
                     </div>
@@ -583,7 +603,7 @@ $recent_bookings = [
                 </a>
             </div>
             <div class="col-6 col-md-3">
-                <a href="#" class="card-soft quick-action-card">
+                <a href="booking_history.php" class="card-soft quick-action-card">
                     <div class="icon-wrap" style="background: linear-gradient(135deg,#0d6efd,#3b82f6);">
                         <i class="bi bi-clock-history"></i>
                     </div>
@@ -592,7 +612,7 @@ $recent_bookings = [
                 </a>
             </div>
             <div class="col-6 col-md-3">
-                <a href="#" class="card-soft quick-action-card">
+                <a href="payment.php" class="card-soft quick-action-card">
                     <div class="icon-wrap" style="background: linear-gradient(135deg,#059669,#10b981);">
                         <i class="bi bi-wallet2"></i>
                     </div>
@@ -633,6 +653,17 @@ $recent_bookings = [
                                 </span>
                             </div>
                             <p><?php echo htmlspecialchars($f['desc'], ENT_QUOTES, 'UTF-8'); ?></p>
+                            <?php
+                            $fp = facility_pricing_by_display_name($f['name']);
+                            if ($fp !== null):
+                            ?>
+                            <p class="small mb-2">
+                                <span class="badge bg-dark rounded-pill px-2 py-1">
+                                    <i class="bi bi-tag me-1"></i><?php echo htmlspecialchars(facility_pricing_format_rm((float) $fp['amount']), ENT_QUOTES, 'UTF-8'); ?>
+                                    <span class="opacity-75"> · <?php echo htmlspecialchars($fp['label'], ENT_QUOTES, 'UTF-8'); ?></span>
+                                </span>
+                            </p>
+                            <?php endif; ?>
                             <span class="btn btn-dark w-100 btn-book d-inline-flex align-items-center justify-content-center">
                                 <i class="bi bi-calendar-check me-1"></i> Book Now
                             </span>

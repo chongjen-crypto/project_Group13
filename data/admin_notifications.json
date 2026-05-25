@@ -1,0 +1,22 @@
+[
+    {
+        "title": "hi",
+        "time": "2026-05-23 10:05",
+        "type": "announcement"
+    },
+    {
+        "title": "Semester booking window opens Monday",
+        "time": "2 hours ago",
+        "type": "announcement"
+    },
+    {
+        "title": "Peak hours reminder: 4 PM – 8 PM",
+        "time": "5 hours ago",
+        "type": "announcement"
+    },
+    {
+        "title": "System update scheduled — 02:00 AM",
+        "time": "Yesterday",
+        "type": "system"
+    }
+]

@@ -40,6 +40,9 @@ $booking_name   = $F['booking_name'] ?? $name;
 
 $booking_href = 'booking.php?facility=' . rawurlencode($booking_name);
 $page_title = h($name) . ' — Scholar Hub';
+
+require_once __DIR__ . '/facility_pricing.php';
+$facility_pricing = facility_pricing_by_display_name($booking_name);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -204,6 +207,31 @@ $page_title = h($name) . ' — Scholar Hub';
             line-height: 1.65;
             color: #374151;
         }
+        .pricing-card {
+            background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
+            color: #fff;
+            border-radius: var(--card-radius);
+            padding: clamp(1.1rem, 3vw, 1.5rem);
+            box-shadow: 0 12px 32px rgba(0,0,0,0.12);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+        .pricing-card .price-amount {
+            font-size: clamp(1.75rem, 4vw, 2.25rem);
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+        .pricing-badge {
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 999px;
+            padding: 0.35rem 0.85rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
 
         main.container {
             padding-left: max(0.75rem, env(safe-area-inset-left));
@@ -259,6 +287,28 @@ $page_title = h($name) . ' — Scholar Hub';
             <p class="desc-lead mb-0"><?php echo nl2br(h($description)); ?></p>
         </div>
     </section>
+
+    <?php if ($facility_pricing !== null): ?>
+    <section class="mb-4">
+        <h3 class="h6 text-uppercase text-muted fw-bold letter-spacing-1 mb-3">
+            <i class="bi bi-tag-fill me-2"></i>Pricing
+        </h3>
+        <div class="pricing-card">
+            <div>
+                <div class="small opacity-75 mb-1"><?php echo h($facility_pricing['facility_name']); ?></div>
+                <div class="price-amount"><?php echo h(facility_pricing_format_rm((float) $facility_pricing['amount'])); ?></div>
+            </div>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <span class="pricing-badge"><i class="bi bi-clock me-1"></i><?php echo h($facility_pricing['label']); ?></span>
+                <?php if ($facility_pricing['mode'] === 'hourly'): ?>
+                    <span class="small opacity-75">Charged per booked hour</span>
+                <?php else: ?>
+                    <span class="small opacity-75">Flat rate per visit / session</span>
+                <?php endif; ?>
+            </div>
+        </div>
+    </section>
+    <?php endif; ?>
 
     <div class="row g-4 mb-4">
         <!-- Opening hours -->

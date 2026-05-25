@@ -1,0 +1,232 @@
+<?php
+/**
+ * Scholar Hub - Sport Facility Booking System
+ * booking_history.php — Student booking history
+ */
+session_start();
+
+if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'student') {
+    header('Location: login.php');
+    exit();
+}
+
+require __DIR__ . '/db.php';
+
+$student_name = isset($_SESSION['full_name']) && trim($_SESSION['full_name']) !== ''
+    ? htmlspecialchars($_SESSION['full_name'], ENT_QUOTES, 'UTF-8')
+    : 'Student';
+
+$student_email = isset($_SESSION['email'])
+    ? htmlspecialchars($_SESSION['email'], ENT_QUOTES, 'UTF-8')
+    : '';
+
+$student_nav_active = 'history';
+
+// Handle Cancel Action
+$cancel_msg = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'cancel_booking') {
+    $booking_id = (int)$_POST['booking_id'];
+    $user_id = (int)$_SESSION['user_id'];
+    
+    // Update booking status to cancelled if it's currently pending or approved and belongs to this user
+    $sql = "UPDATE bookings SET booking_status = 'cancelled' WHERE booking_id = ? AND user_id = ? AND booking_status IN ('pending', 'approved')";
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "ii", $booking_id, $user_id);
+        mysqli_stmt_execute($stmt);
+        if (mysqli_stmt_affected_rows($stmt) > 0) {
+            $cancel_msg = "Booking #{$booking_id} has been cancelled successfully.";
+        } else {
+            $cancel_msg = "Could not cancel booking. It may have already been processed.";
+        }
+        mysqli_stmt_close($stmt);
+    }
+}
+
+// Fetch all bookings for this user
+$bookings = [];
+$user_id = (int)$_SESSION['user_id'];
+$sql = "SELECT b.*, 
+        CASE WHEN b.facility_type = 'snooker' THEN 'Snooker Room'
+             WHEN b.facility_type = 'gym' THEN 'Gym Room'
+             WHEN b.facility_type = 'swimming' THEN 'Swimming Pool'
+             WHEN b.facility_type = 'track' THEN 'Track Field'
+             WHEN b.facility_type = 'badminton' THEN 'Badminton Court'
+             WHEN b.facility_type = 'basketball' THEN 'Basketball Court'
+             WHEN b.facility_type = 'futsal' THEN 'Futsal Court'
+             WHEN b.facility_type = 'tennis' THEN 'Tennis Court'
+             WHEN b.facility_type = 'volleyball' THEN 'Volleyball Court'
+             ELSE b.facility_type END as facility_name
+        FROM bookings b 
+        WHERE b.user_id = ? 
+        ORDER BY b.created_at DESC";
+$stmt = mysqli_prepare($conn, $sql);
+if ($stmt) {
+    mysqli_stmt_bind_param($stmt, "i", $user_id);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    while ($row = mysqli_fetch_assoc($res)) {
+        $bookings[] = $row;
+    }
+    mysqli_stmt_close($stmt);
+}
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Booking History — Scholar Hub</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <?php include __DIR__ . '/includes/student_styles.php'; ?>
+</head>
+<body>
+
+<?php include __DIR__ . '/includes/student_sidebar.php'; ?>
+
+<div class="main-wrap" id="mainWrap">
+    <header class="top-header">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-3">
+                <button type="button" class="btn-menu-toggle" id="btnMenuToggle" aria-label="Open menu">
+                    <i class="bi bi-list fs-4"></i>
+                </button>
+                <div>
+                    <div class="page-title">Booking History</div>
+                    <div class="welcome-text">View and manage your bookings</div>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+                <div class="datetime-pill" id="liveDateTime"></div>
+                <div class="avatar" title="<?php echo $student_email !== '' ? $student_email : $student_name; ?>">
+                    <?php
+                    $parts = preg_split('/\s+/', trim($_SESSION['full_name'] ?? 'S'));
+                    $ini = strtoupper(substr($parts[0] ?? 'S', 0, 1));
+                    if (isset($parts[1]) && $parts[1] !== '') {
+                        $ini .= strtoupper(substr($parts[1], 0, 1));
+                    }
+                    echo htmlspecialchars($ini, ENT_QUOTES, 'UTF-8');
+                    ?>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="content-area">
+        <?php if ($cancel_msg): ?>
+            <div class="alert alert-info alert-dismissible fade show">
+                <?php echo htmlspecialchars($cancel_msg); ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
+
+        <h2 class="section-title"><i class="bi bi-clock-history text-primary"></i> My Bookings</h2>
+        
+        <div class="card card-soft p-0 overflow-hidden">
+            <div class="table-responsive">
+                <table class="table table-modern table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Booking ID</th>
+                            <th>Facility</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Status</th>
+                            <th class="pe-4 text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($bookings)): ?>
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">You have no bookings yet.</td>
+                        </tr>
+                        <?php else: ?>
+                            <?php foreach ($bookings as $b): 
+                                $status_class = 'text-bg-secondary';
+                                if ($b['booking_status'] === 'pending') $status_class = 'text-bg-warning';
+                                elseif ($b['booking_status'] === 'approved') $status_class = 'text-bg-success';
+                                elseif ($b['booking_status'] === 'rejected') $status_class = 'text-bg-danger';
+                                elseif ($b['booking_status'] === 'cancelled') $status_class = 'text-bg-dark';
+                            ?>
+                            <tr>
+                                <td class="ps-4 text-muted">#<?php echo htmlspecialchars($b['booking_id']); ?></td>
+                                <td class="fw-semibold"><?php echo htmlspecialchars($b['facility_name']); ?></td>
+                                <td><?php echo htmlspecialchars($b['booking_date']); ?></td>
+                                <td><?php echo htmlspecialchars(substr($b['start_time'], 0, 5) . ' - ' . substr($b['end_time'], 0, 5)); ?></td>
+                                <td>
+                                    <span class="badge rounded-pill <?php echo $status_class; ?>">
+                                        <?php echo ucfirst(htmlspecialchars($b['booking_status'])); ?>
+                                    </span>
+                                    <?php if ($b['booking_status'] === 'rejected' && !empty($b['reject_reason'])): ?>
+                                        <br><small class="text-danger d-block mt-1">Reason: <?php echo htmlspecialchars($b['reject_reason']); ?></small>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="pe-4 text-end">
+                                    <?php if (in_array($b['booking_status'], ['pending', 'approved'])): ?>
+                                    <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to cancel this booking?');">
+                                        <input type="hidden" name="action" value="cancel_booking">
+                                        <input type="hidden" name="booking_id" value="<?php echo htmlspecialchars($b['booking_id']); ?>">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill">Cancel</button>
+                                    </form>
+                                    <?php else: ?>
+                                    <span class="text-muted small">—</span>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+(function () {
+    'use strict';
+    function updateDateTime() {
+        var el = document.getElementById('liveDateTime');
+        if (!el) return;
+        el.textContent = new Date().toLocaleString(undefined, {
+            weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
+            hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
+        });
+    }
+    updateDateTime();
+    setInterval(updateDateTime, 1000);
+
+    var sidebar = document.getElementById('sidebar');
+    var backdrop = document.getElementById('sidebarBackdrop');
+    var btnToggle = document.getElementById('btnMenuToggle');
+
+    function closeSidebar() {
+        if(sidebar) sidebar.classList.remove('show');
+        if(backdrop) backdrop.classList.remove('show');
+        document.body.style.overflow = '';
+    }
+    function openSidebar() {
+        if(sidebar) sidebar.classList.add('show');
+        if(backdrop) backdrop.classList.add('show');
+        document.body.style.overflow = 'hidden';
+    }
+
+    if (btnToggle) {
+        btnToggle.addEventListener('click', function () {
+            if (sidebar.classList.contains('show')) closeSidebar();
+            else openSidebar();
+        });
+    }
+
+    if (backdrop) {
+        backdrop.addEventListener('click', closeSidebar);
+    }
+})();
+</script>
+</body>
+</html>

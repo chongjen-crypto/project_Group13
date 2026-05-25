@@ -30,13 +30,32 @@ $overview_stats = [
     ['label' => 'Pending Payments', 'value' => '5', 'icon' => 'bi-credit-card', 'gradient' => 'linear-gradient(135deg,#8b5cf6,#7c3aed)'],
 ];
 
-// ---- Dummy pending bookings (dashboard list: all Pending; Approve/Reject on detail page after View) ----
-$pending_bookings = [
-    ['id' => 1, 'student' => 'Ahmad Zaki', 'facility' => 'Badminton Court', 'date' => '2026-05-14', 'time' => '10:00 - 11:00'],
-    ['id' => 2, 'student' => 'Sarah Lee', 'facility' => 'Swimming Pool', 'date' => '2026-05-14', 'time' => '15:30 - 16:30'],
-    ['id' => 3, 'student' => 'Raj Kumar', 'facility' => 'Gym Room', 'date' => '2026-05-14', 'time' => '18:00 - 19:00'],
-    ['id' => 4, 'student' => 'Emily Chen', 'facility' => 'Tennis Court', 'date' => '2026-05-15', 'time' => '09:00 - 10:30'],
-];
+// ---- Fetch pending bookings from DB ----
+require_once __DIR__ . '/db.php';
+$pending_bookings = [];
+$sql = "SELECT b.booking_id as id, u.full_name as student, b.facility_type, b.booking_date as date, b.start_time, b.end_time,
+        CASE WHEN b.facility_type = 'snooker' THEN 'Snooker Room'
+             WHEN b.facility_type = 'gym' THEN 'Gym Room'
+             WHEN b.facility_type = 'swimming' THEN 'Swimming Pool'
+             WHEN b.facility_type = 'track' THEN 'Track Field'
+             WHEN b.facility_type = 'badminton' THEN 'Badminton Court'
+             WHEN b.facility_type = 'basketball' THEN 'Basketball Court'
+             WHEN b.facility_type = 'futsal' THEN 'Futsal Court'
+             WHEN b.facility_type = 'tennis' THEN 'Tennis Court'
+             WHEN b.facility_type = 'volleyball' THEN 'Volleyball Court'
+             ELSE b.facility_type END as facility
+        FROM bookings b
+        JOIN users u ON b.user_id = u.id
+        WHERE b.booking_status = 'pending'
+        ORDER BY b.created_at ASC";
+$res = mysqli_query($conn, $sql);
+if ($res) {
+    while ($row = mysqli_fetch_assoc($res)) {
+        $row['time'] = substr($row['start_time'], 0, 5) . ' - ' . substr($row['end_time'], 0, 5);
+        $pending_bookings[] = $row;
+    }
+}
+
 
 // ---- Dummy facility status (all 9 facilities) ----
 $facility_status = [
@@ -371,38 +390,10 @@ $payment_rows = [
 <body>
 
 <!-- ========================= SIDEBAR ========================= -->
-<aside class="sidebar" id="sidebar">
-    <div class="sidebar-brand">
-        <i class="bi bi-mortarboard-fill me-1"></i> SCHOLAR HUB
-        <small>Sport Facility Booking — Staff</small>
-    </div>
-    <nav class="d-flex flex-column flex-grow-1">
-        <a href="staff_dashboard.php" class="nav-link-sidebar active" data-nav="dashboard">
-            <i class="bi bi-speedometer2"></i> Dashboard
-        </a>
-        <a href="#" class="nav-link-sidebar" data-nav="requests">
-            <i class="bi bi-inbox"></i> Booking Requests
-        </a>
-        <a href="#" class="nav-link-sidebar" data-nav="schedule">
-            <i class="bi bi-calendar3"></i> Facility Schedule
-        </a>
-        <a href="#" class="nav-link-sidebar" data-nav="status">
-            <i class="bi bi-activity"></i> Facility Status
-        </a>
-        <a href="#" class="nav-link-sidebar" data-nav="payments">
-            <i class="bi bi-wallet2"></i> Payment Verification
-        </a>
-        <a href="#" class="nav-link-sidebar" data-nav="notifications">
-            <i class="bi bi-bell"></i> Notifications
-        </a>
-    </nav>
-    <div class="sidebar-footer">
-        <a href="logout.php" class="nav-link-sidebar text-danger" style="background: rgba(220,53,69,0.12);">
-            <i class="bi bi-box-arrow-right"></i> Logout
-        </a>
-    </div>
-</aside>
-<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+<?php
+$staff_nav_active = 'dashboard';
+include __DIR__ . '/includes/staff_sidebar.php';
+?>
 
 <!-- ========================= MAIN ========================= -->
 <div class="main-wrap" id="mainWrap">
@@ -462,21 +453,7 @@ $payment_rows = [
                 </a>
             </div>
             <div class="col-6 col-md-3">
-                <a href="#" class="card-soft quick-action-card d-block rounded overflow-hidden">
-                    <div class="icon-wrap" style="background: linear-gradient(135deg,#2563eb,#1d4ed8);"><i class="bi bi-calendar-week"></i></div>
-                    <h6>Facility Schedule</h6>
-                    <p>View daily timetable</p>
-                </a>
-            </div>
-            <div class="col-6 col-md-3">
-                <a href="#" class="card-soft quick-action-card d-block rounded overflow-hidden">
-                    <div class="icon-wrap" style="background: linear-gradient(135deg,#059669,#047857);"><i class="bi bi-cash-coin"></i></div>
-                    <h6>Verify Payments</h6>
-                    <p>Pending transactions</p>
-                </a>
-            </div>
-            <div class="col-6 col-md-3">
-                <a href="#" class="card-soft quick-action-card d-block rounded overflow-hidden">
+                <a href="send_notification.php" class="card-soft quick-action-card d-block rounded overflow-hidden">
                     <div class="icon-wrap" style="background: linear-gradient(135deg,#7c3aed,#6d28d9);"><i class="bi bi-send"></i></div>
                     <h6>Send Notifications</h6>
                     <p>Broadcast to students</p>

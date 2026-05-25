@@ -42,9 +42,6 @@ $admin_page_title = 'Facility Management';
                             </span>
                         </div>
                         <p class="small text-muted mb-1">
-                            <i class="bi bi-wrench-adjustable me-1"></i>Maintenance: <strong><?php echo htmlspecialchars($f['maintenance'], ENT_QUOTES, 'UTF-8'); ?></strong>
-                        </p>
-                        <p class="small text-muted mb-1">
                             <i class="bi bi-calendar-day me-1"></i>Bookings today: <strong><?php echo htmlspecialchars($f['bookings_today'], ENT_QUOTES, 'UTF-8'); ?></strong>
                         </p>
                         <p class="small text-muted mb-2">
@@ -56,7 +53,6 @@ $admin_page_title = 'Facility Management';
                         <div class="d-flex flex-wrap gap-2">
                             <button type="button" class="btn btn-sm btn-outline-primary rounded-pill"><i class="bi bi-pencil"></i> Edit</button>
                             <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill">Disable</button>
-                            <button type="button" class="btn btn-sm btn-outline-warning text-dark rounded-pill"><i class="bi bi-tools"></i> Maintenance</button>
                         </div>
                     </div>
                 </div>

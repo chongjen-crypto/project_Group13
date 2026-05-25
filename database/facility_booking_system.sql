@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 15, 2026 at 04:47 AM
+-- Generation Time: May 25, 2026 at 02:46 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -28,14 +28,25 @@ SET time_zone = "+00:00";
 --
 
 CREATE TABLE `badminton_court` (
-  `id` int(11) NOT NULL,
-  `student_name` varchar(100) NOT NULL,
-  `student_email` varchar(100) DEFAULT NULL,
-  `booking_date` date NOT NULL,
-  `start_time` time NOT NULL,
-  `end_time` time NOT NULL,
+  `court_id` int(11) NOT NULL,
+  `court_name` varchar(50) NOT NULL,
+  `status` enum('available','maintenance','closed') DEFAULT 'available',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `badminton_court`
+--
+
+INSERT INTO `badminton_court` (`court_id`, `court_name`, `status`, `created_at`) VALUES
+(1, 'Court 1', 'available', '2026-05-22 03:42:52'),
+(2, 'Court 2', 'available', '2026-05-22 03:42:52'),
+(3, 'Court 3', 'available', '2026-05-22 03:42:52'),
+(4, 'Court 4', 'available', '2026-05-22 03:42:52'),
+(5, 'Court 5', 'available', '2026-05-22 03:42:52'),
+(6, 'Court 6', 'available', '2026-05-22 03:42:52'),
+(7, 'Court 7', 'available', '2026-05-22 03:42:52'),
+(8, 'Court 8', 'available', '2026-05-22 03:42:52');
 
 -- --------------------------------------------------------
 
@@ -44,14 +55,58 @@ CREATE TABLE `badminton_court` (
 --
 
 CREATE TABLE `basketball_court` (
-  `id` int(11) NOT NULL,
-  `student_name` varchar(100) NOT NULL,
-  `student_email` varchar(100) DEFAULT NULL,
+  `court_id` int(11) NOT NULL,
+  `court_name` varchar(50) NOT NULL,
+  `status` enum('available','maintenance','closed') DEFAULT 'available',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `basketball_court`
+--
+
+INSERT INTO `basketball_court` (`court_id`, `court_name`, `status`, `created_at`) VALUES
+(1, 'Court 1', 'available', '2026-05-22 03:43:17'),
+(2, 'Court 2', 'available', '2026-05-22 03:43:17'),
+(3, 'Court 3', 'available', '2026-05-22 03:43:17'),
+(4, 'Court 4', 'available', '2026-05-22 03:43:17');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `bookings`
+--
+
+CREATE TABLE `bookings` (
+  `booking_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `facility_type` varchar(50) NOT NULL,
+  `court_id` int(11) DEFAULT NULL,
   `booking_date` date NOT NULL,
   `start_time` time NOT NULL,
   `end_time` time NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `purpose` text DEFAULT NULL,
+  `booking_status` enum('pending','approved','rejected','completed','cancelled') DEFAULT 'pending',
+  `payment_method` varchar(50) DEFAULT NULL,
+  `payment_amount` decimal(10,2) DEFAULT NULL,
+  `payment_status` enum('pending','paid','failed','refunded') NOT NULL DEFAULT 'pending',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `reject_reason` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `bookings`
+--
+
+INSERT INTO `bookings` (`booking_id`, `user_id`, `facility_type`, `court_id`, `booking_date`, `start_time`, `end_time`, `purpose`, `booking_status`, `payment_method`, `payment_amount`, `payment_status`, `created_at`, `reject_reason`) VALUES
+(1, 11, 'badminton', 1, '2026-05-22', '09:00:00', '10:00:00', '', 'cancelled', NULL, NULL, 'pending', '2026-05-22 04:26:26', NULL),
+(2, 11, 'badminton', 1, '2026-05-23', '08:00:00', '09:00:00', '', 'cancelled', NULL, NULL, 'pending', '2026-05-23 06:06:47', NULL),
+(3, 11, 'badminton', 1, '2026-05-23', '09:00:00', '10:00:00', '', 'cancelled', NULL, NULL, 'pending', '2026-05-23 06:06:47', NULL),
+(4, 11, 'badminton', 1, '2026-05-23', '10:00:00', '11:00:00', '', 'cancelled', NULL, NULL, 'pending', '2026-05-23 06:06:47', NULL),
+(5, 11, 'badminton', 1, '2026-05-23', '11:00:00', '12:00:00', '', 'cancelled', 'tng', 5.00, 'paid', '2026-05-23 06:35:14', NULL),
+(6, 11, 'badminton', 1, '2026-05-23', '08:00:00', '09:00:00', '', 'pending', 'in_app', 5.00, 'paid', '2026-05-23 07:12:51', NULL),
+(7, 11, 'badminton', 1, '2026-05-23', '09:00:00', '10:00:00', '', 'pending', 'in_app', 5.00, 'paid', '2026-05-23 07:12:51', NULL),
+(8, 11, 'badminton', 1, '2026-05-23', '10:00:00', '11:00:00', '', 'pending', 'in_app', 5.00, 'paid', '2026-05-23 07:12:51', NULL);
 
 -- --------------------------------------------------------
 
@@ -60,24 +115,35 @@ CREATE TABLE `basketball_court` (
 --
 
 CREATE TABLE `facilities` (
-  `id` int(11) NOT NULL,
-  `facility_name` varchar(100) NOT NULL
+  `facility_id` int(11) NOT NULL,
+  `facility_name` varchar(100) NOT NULL,
+  `facility_type` varchar(50) NOT NULL,
+  `description` text DEFAULT NULL,
+  `image` varchar(255) DEFAULT NULL,
+  `location` varchar(100) DEFAULT NULL,
+  `opening_time` time DEFAULT NULL,
+  `closing_time` time DEFAULT NULL,
+  `status` enum('active','maintenance','closed') DEFAULT 'active',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `facilities`
 --
 
-INSERT INTO `facilities` (`id`, `facility_name`) VALUES
-(1, 'Badminton Court'),
-(2, 'Tennis Court'),
-(3, 'Swimming Pool'),
-(4, 'Gym Room'),
-(5, 'Track Field'),
-(6, 'Volleyball Court'),
-(7, 'Basketball Court'),
-(8, 'Snooker Room'),
-(9, 'Futsal Court');
+INSERT INTO `facilities` (`facility_id`, `facility_name`, `facility_type`, `description`, `image`, `location`, `opening_time`, `closing_time`, `status`, `created_at`) VALUES
+(1, 'Badminton Court', 'badminton', 'Indoor badminton courts', NULL, 'Sports Complex', '08:00:00', '22:00:00', 'active', '2026-05-22 03:44:25'),
+(2, 'Basketball Court', 'basketball', 'Full size basketball courts', NULL, 'Sports Complex', '08:00:00', '22:00:00', 'active', '2026-05-22 03:44:25'),
+(3, 'Futsal Court', 'futsal', 'Indoor futsal courts', NULL, 'Sports Complex', '08:00:00', '22:00:00', 'active', '2026-05-22 03:44:25'),
+(4, 'Tennis Court', 'tennis', 'Outdoor tennis courts', NULL, 'Sports Complex', '08:00:00', '22:00:00', 'active', '2026-05-22 03:44:25'),
+(5, 'Volleyball Court', 'volleyball', 'Indoor volleyball courts', NULL, 'Sports Complex', '08:00:00', '22:00:00', 'active', '2026-05-22 03:44:25'),
+(6, 'Gym Room', 'gym', 'Fitness and workout gym', NULL, 'Block A', '08:00:00', '22:00:00', 'active', '2026-05-22 03:44:25'),
+(7, 'Swimming Pool', 'swimming', 'Olympic-size swimming pool', NULL, 'Aquatic Center', '08:00:00', '20:00:00', 'active', '2026-05-22 03:44:25'),
+(8, 'Track Field', 'track', 'Outdoor running track and field', NULL, 'Stadium', '06:00:00', '22:00:00', 'active', '2026-05-22 03:44:25'),
+(9, 'Snooker Room', 'snooker', 'Indoor snooker tables for recreational use', NULL, 'Sports Complex', '08:00:00', '22:00:00', 'active', '2026-05-22 03:52:41'),
+(10, 'Gym Room', 'gym', 'Fitness and workout gym', NULL, 'Block A', '08:00:00', '22:00:00', 'active', '2026-05-22 04:02:56'),
+(11, 'Swimming Pool', 'swimming', 'Olympic-size swimming pool', NULL, 'Aquatic Center', '08:00:00', '20:00:00', 'active', '2026-05-22 04:02:56'),
+(12, 'Track Field', 'track', 'Outdoor running track and field', NULL, 'Stadium', '06:00:00', '22:00:00', 'active', '2026-05-22 04:02:56');
 
 -- --------------------------------------------------------
 
@@ -86,30 +152,19 @@ INSERT INTO `facilities` (`id`, `facility_name`) VALUES
 --
 
 CREATE TABLE `futsal_court` (
-  `id` int(11) NOT NULL,
-  `student_name` varchar(100) NOT NULL,
-  `student_email` varchar(100) DEFAULT NULL,
-  `booking_date` date NOT NULL,
-  `start_time` time NOT NULL,
-  `end_time` time NOT NULL,
+  `court_id` int(11) NOT NULL,
+  `court_name` varchar(50) NOT NULL,
+  `status` enum('available','maintenance','closed') DEFAULT 'available',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- --------------------------------------------------------
-
 --
--- Table structure for table `gym_room`
+-- Dumping data for table `futsal_court`
 --
 
-CREATE TABLE `gym_room` (
-  `id` int(11) NOT NULL,
-  `student_name` varchar(100) NOT NULL,
-  `student_email` varchar(100) DEFAULT NULL,
-  `booking_date` date NOT NULL,
-  `start_time` time NOT NULL,
-  `end_time` time NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+INSERT INTO `futsal_court` (`court_id`, `court_name`, `status`, `created_at`) VALUES
+(1, 'Court 1', 'available', '2026-05-22 03:43:25'),
+(2, 'Court 2', 'available', '2026-05-22 03:43:25');
 
 -- --------------------------------------------------------
 
@@ -118,30 +173,19 @@ CREATE TABLE `gym_room` (
 --
 
 CREATE TABLE `snooker_room` (
-  `id` int(11) NOT NULL,
-  `student_name` varchar(100) NOT NULL,
-  `student_email` varchar(100) DEFAULT NULL,
-  `booking_date` date NOT NULL,
-  `start_time` time NOT NULL,
-  `end_time` time NOT NULL,
+  `table_id` int(11) NOT NULL,
+  `table_name` varchar(50) NOT NULL,
+  `status` enum('available','maintenance','closed') DEFAULT 'available',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- --------------------------------------------------------
-
 --
--- Table structure for table `swimming_pool`
+-- Dumping data for table `snooker_room`
 --
 
-CREATE TABLE `swimming_pool` (
-  `id` int(11) NOT NULL,
-  `student_name` varchar(100) NOT NULL,
-  `student_email` varchar(100) DEFAULT NULL,
-  `booking_date` date NOT NULL,
-  `start_time` time NOT NULL,
-  `end_time` time NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+INSERT INTO `snooker_room` (`table_id`, `table_name`, `status`, `created_at`) VALUES
+(1, 'Table 1', 'available', '2026-05-22 03:52:29'),
+(2, 'Table 2', 'available', '2026-05-22 03:52:29');
 
 -- --------------------------------------------------------
 
@@ -150,30 +194,19 @@ CREATE TABLE `swimming_pool` (
 --
 
 CREATE TABLE `tennis_court` (
-  `id` int(11) NOT NULL,
-  `student_name` varchar(100) NOT NULL,
-  `student_email` varchar(100) DEFAULT NULL,
-  `booking_date` date NOT NULL,
-  `start_time` time NOT NULL,
-  `end_time` time NOT NULL,
+  `court_id` int(11) NOT NULL,
+  `court_name` varchar(50) NOT NULL,
+  `status` enum('available','maintenance','closed') DEFAULT 'available',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- --------------------------------------------------------
-
 --
--- Table structure for table `track_field`
+-- Dumping data for table `tennis_court`
 --
 
-CREATE TABLE `track_field` (
-  `id` int(11) NOT NULL,
-  `student_name` varchar(100) NOT NULL,
-  `student_email` varchar(100) DEFAULT NULL,
-  `booking_date` date NOT NULL,
-  `start_time` time NOT NULL,
-  `end_time` time NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+INSERT INTO `tennis_court` (`court_id`, `court_name`, `status`, `created_at`) VALUES
+(1, 'Court 1', 'available', '2026-05-22 03:43:34'),
+(2, 'Court 2', 'available', '2026-05-22 03:43:34');
 
 -- --------------------------------------------------------
 
@@ -200,8 +233,7 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `role`, `email_verified`, `verification_code`, `verification_expiry`, `full_name`, `user_id`, `email`, `phone`, `password`, `created_at`) VALUES
-(5, 'student', 1, NULL, NULL, 'zzz', 'zzz', 'zzz@gmail.com', '', '$2y$10$kzHjVKrZnE5eHD3MDUI8/uaO.nLxvo2.LjO40VEUoIWIhXGyuO3yy', '2026-05-11 06:53:28'),
-(6, 'student', 1, NULL, NULL, 'zz', 'zz', 'kuangkaize@gmail.com', '', '$2y$10$0PqvWQcV9wardic5alhvYOoEgm2/YCj4ktW8IgVFNh.amDO3r5QpW', '2026-05-11 07:47:15'),
+(5, 'staff', 1, NULL, NULL, 'zzz', 'zzz', 'zzz@gmail.com', '', '$2y$10$kzHjVKrZnE5eHD3MDUI8/uaO.nLxvo2.LjO40VEUoIWIhXGyuO3yy', '2026-05-11 06:53:28'),
 (7, 'student', 1, NULL, NULL, 'zzzz', 'zzzz', 'kaizekuang@gmail.com', '', '$2y$10$m7WXnZVpTz/5zQKQCua04O6tHUZMjYBkdWk.0NBiy8Dd05eTn2lt6', '2026-05-11 08:15:00'),
 (11, 'student', 1, NULL, NULL, 'student', 'default', 'student@gmail.com', '', '$2y$10$XKiBe7M39LWJyxCc/cVDJeySAdpMmz00JuepE9CauDHQK.Xds22Oq', '2026-05-14 04:07:52'),
 (12, 'staff', 0, NULL, NULL, 'default', 'staff', 'staff@gmail.com', '', '$2y$10$yjM3CdG99TkYBNaI8YpS.ejOBseYEoMFijRrEOtsnuUe6tJQzAwMe', '2026-05-14 08:48:05'),
@@ -210,7 +242,7 @@ INSERT INTO `users` (`id`, `role`, `email_verified`, `verification_code`, `verif
 (15, 'student', 0, NULL, NULL, 'Emily Tan', 'STU002', 'emilytan@gmail.com', '0122222222', '$2y$10$yjM3CdG99TkYBNaI8YpS.ejOBseYEoMFijRrEOtsnuUe6tJQzAwMe', '2026-05-14 14:44:35'),
 (16, 'student', 0, NULL, NULL, 'Ryan Wong', 'STU003', 'ryanwong@gmail.com', '0123333333', '$2y$10$yjM3CdG99TkYBNaI8YpS.ejOBseYEoMFijRrEOtsnuUe6tJQzAwMe', '2026-05-14 14:44:35'),
 (17, 'student', 0, NULL, NULL, 'Sophia Lee', 'STU004', 'sophialee@gmail.com', '0124444444', '$2y$10$yjM3CdG99TkYBNaI8YpS.ejOBseYEoMFijRrEOtsnuUe6tJQzAwMe', '2026-05-14 14:44:35'),
-(18, 'student', 0, NULL, NULL, 'Daniel Ong', 'STU005', 'danielong@gmail.com', '0125555555', '$2y$10$yjM3CdG99TkYBNaI8YpS.ejOBseYEoMFijRrEOtsnuUe6tJQzAwMe', '2026-05-14 14:44:35'),
+(18, 'staff', 0, NULL, NULL, 'Daniel Ong', 'STU005', 'danielong@gmail.com', '0125555555', '$2y$10$yjM3CdG99TkYBNaI8YpS.ejOBseYEoMFijRrEOtsnuUe6tJQzAwMe', '2026-05-14 14:44:35'),
 (19, 'staff', 0, NULL, NULL, 'Michael Tan', 'STF001', 'michaeltan@gmail.com', '0131111111', '$2y$10$yjM3CdG99TkYBNaI8YpS.ejOBseYEoMFijRrEOtsnuUe6tJQzAwMe', '2026-05-14 14:44:35'),
 (20, 'staff', 0, NULL, NULL, 'Sarah Lim', 'STF002', 'sarahlim@gmail.com', '0132222222', '$2y$10$yjM3CdG99TkYBNaI8YpS.ejOBseYEoMFijRrEOtsnuUe6tJQzAwMe', '2026-05-14 14:44:35'),
 (21, 'staff', 0, NULL, NULL, 'Kevin Lee', 'STF003', 'kevinlee@gmail.com', '0133333333', '$2y$10$yjM3CdG99TkYBNaI8YpS.ejOBseYEoMFijRrEOtsnuUe6tJQzAwMe', '2026-05-14 14:44:35');
@@ -222,14 +254,19 @@ INSERT INTO `users` (`id`, `role`, `email_verified`, `verification_code`, `verif
 --
 
 CREATE TABLE `volleyball_court` (
-  `id` int(11) NOT NULL,
-  `student_name` varchar(100) NOT NULL,
-  `student_email` varchar(100) DEFAULT NULL,
-  `booking_date` date NOT NULL,
-  `start_time` time NOT NULL,
-  `end_time` time NOT NULL,
+  `court_id` int(11) NOT NULL,
+  `court_name` varchar(50) NOT NULL,
+  `status` enum('available','maintenance','closed') DEFAULT 'available',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `volleyball_court`
+--
+
+INSERT INTO `volleyball_court` (`court_id`, `court_name`, `status`, `created_at`) VALUES
+(1, 'Court 1', 'available', '2026-05-22 03:43:41'),
+(2, 'Court 2', 'available', '2026-05-22 03:43:41');
 
 --
 -- Indexes for dumped tables
@@ -239,55 +276,44 @@ CREATE TABLE `volleyball_court` (
 -- Indexes for table `badminton_court`
 --
 ALTER TABLE `badminton_court`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`court_id`);
 
 --
 -- Indexes for table `basketball_court`
 --
 ALTER TABLE `basketball_court`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`court_id`);
+
+--
+-- Indexes for table `bookings`
+--
+ALTER TABLE `bookings`
+  ADD PRIMARY KEY (`booking_id`),
+  ADD KEY `idx_bookings_payment_status` (`payment_status`);
 
 --
 -- Indexes for table `facilities`
 --
 ALTER TABLE `facilities`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`facility_id`);
 
 --
 -- Indexes for table `futsal_court`
 --
 ALTER TABLE `futsal_court`
-  ADD PRIMARY KEY (`id`);
-
---
--- Indexes for table `gym_room`
---
-ALTER TABLE `gym_room`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`court_id`);
 
 --
 -- Indexes for table `snooker_room`
 --
 ALTER TABLE `snooker_room`
-  ADD PRIMARY KEY (`id`);
-
---
--- Indexes for table `swimming_pool`
---
-ALTER TABLE `swimming_pool`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`table_id`);
 
 --
 -- Indexes for table `tennis_court`
 --
 ALTER TABLE `tennis_court`
-  ADD PRIMARY KEY (`id`);
-
---
--- Indexes for table `track_field`
---
-ALTER TABLE `track_field`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`court_id`);
 
 --
 -- Indexes for table `users`
@@ -300,7 +326,7 @@ ALTER TABLE `users`
 -- Indexes for table `volleyball_court`
 --
 ALTER TABLE `volleyball_court`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`court_id`);
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -310,67 +336,55 @@ ALTER TABLE `volleyball_court`
 -- AUTO_INCREMENT for table `badminton_court`
 --
 ALTER TABLE `badminton_court`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `court_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `basketball_court`
 --
 ALTER TABLE `basketball_court`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `court_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT for table `bookings`
+--
+ALTER TABLE `bookings`
+  MODIFY `booking_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `facilities`
 --
 ALTER TABLE `facilities`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `facility_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `futsal_court`
 --
 ALTER TABLE `futsal_court`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `gym_room`
---
-ALTER TABLE `gym_room`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `court_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `snooker_room`
 --
 ALTER TABLE `snooker_room`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `swimming_pool`
---
-ALTER TABLE `swimming_pool`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `table_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `tennis_court`
 --
 ALTER TABLE `tennis_court`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `track_field`
---
-ALTER TABLE `track_field`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `court_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
 
 --
 -- AUTO_INCREMENT for table `volleyball_court`
 --
 ALTER TABLE `volleyball_court`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `court_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
