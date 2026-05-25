@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 25, 2026 at 02:46 PM
+-- Generation Time: May 25, 2026 at 04:50 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -124,26 +124,29 @@ CREATE TABLE `facilities` (
   `opening_time` time DEFAULT NULL,
   `closing_time` time DEFAULT NULL,
   `status` enum('active','maintenance','closed') DEFAULT 'active',
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `price_amount` decimal(10,2) NOT NULL DEFAULT 5.00,
+  `price_mode` enum('hourly','entry') NOT NULL DEFAULT 'hourly',
+  `rules` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `facilities`
 --
 
-INSERT INTO `facilities` (`facility_id`, `facility_name`, `facility_type`, `description`, `image`, `location`, `opening_time`, `closing_time`, `status`, `created_at`) VALUES
-(1, 'Badminton Court', 'badminton', 'Indoor badminton courts', NULL, 'Sports Complex', '08:00:00', '22:00:00', 'active', '2026-05-22 03:44:25'),
-(2, 'Basketball Court', 'basketball', 'Full size basketball courts', NULL, 'Sports Complex', '08:00:00', '22:00:00', 'active', '2026-05-22 03:44:25'),
-(3, 'Futsal Court', 'futsal', 'Indoor futsal courts', NULL, 'Sports Complex', '08:00:00', '22:00:00', 'active', '2026-05-22 03:44:25'),
-(4, 'Tennis Court', 'tennis', 'Outdoor tennis courts', NULL, 'Sports Complex', '08:00:00', '22:00:00', 'active', '2026-05-22 03:44:25'),
-(5, 'Volleyball Court', 'volleyball', 'Indoor volleyball courts', NULL, 'Sports Complex', '08:00:00', '22:00:00', 'active', '2026-05-22 03:44:25'),
-(6, 'Gym Room', 'gym', 'Fitness and workout gym', NULL, 'Block A', '08:00:00', '22:00:00', 'active', '2026-05-22 03:44:25'),
-(7, 'Swimming Pool', 'swimming', 'Olympic-size swimming pool', NULL, 'Aquatic Center', '08:00:00', '20:00:00', 'active', '2026-05-22 03:44:25'),
-(8, 'Track Field', 'track', 'Outdoor running track and field', NULL, 'Stadium', '06:00:00', '22:00:00', 'active', '2026-05-22 03:44:25'),
-(9, 'Snooker Room', 'snooker', 'Indoor snooker tables for recreational use', NULL, 'Sports Complex', '08:00:00', '22:00:00', 'active', '2026-05-22 03:52:41'),
-(10, 'Gym Room', 'gym', 'Fitness and workout gym', NULL, 'Block A', '08:00:00', '22:00:00', 'active', '2026-05-22 04:02:56'),
-(11, 'Swimming Pool', 'swimming', 'Olympic-size swimming pool', NULL, 'Aquatic Center', '08:00:00', '20:00:00', 'active', '2026-05-22 04:02:56'),
-(12, 'Track Field', 'track', 'Outdoor running track and field', NULL, 'Stadium', '06:00:00', '22:00:00', 'active', '2026-05-22 04:02:56');
+INSERT INTO `facilities` (`facility_id`, `facility_name`, `facility_type`, `description`, `image`, `location`, `opening_time`, `closing_time`, `status`, `created_at`, `price_amount`, `price_mode`, `rules`) VALUES
+(1, 'Badminton Court', 'badminton', 'A well-maintained indoor badminton facility suitable for recreational play, training sessions, and organized matches.', 'assets/badmintoncourt.webp', 'Sports Complex', '08:00:00', '22:00:00', 'active', '2026-05-22 03:44:25', 9.10, 'hourly', 'Non-marking indoor sports shoes only.\r\nMaximum session length follows your booking slot.\r\nFood and drinks (except sealed water) are not allowed on court.'),
+(2, 'Basketball Court', 'basketball', 'A full-size basketball facility suitable for individual practice, team training, and competitive matches.', 'assets/basketballcourt.jpeg', 'Sports Complex', '08:00:00', '22:00:00', 'active', '2026-05-22 03:44:25', 5.00, 'hourly', 'Indoor basketball shoes only.\nShare court fairly during open slots.\nNo dunking on portable hoops unless allowed.'),
+(3, 'Futsal Court', 'futsal', 'An indoor futsal facility suitable for team practice, recreational matches, and organized tournaments.', 'assets/futsalcourt.jpg', 'Sports Complex', '08:00:00', '22:00:00', 'active', '2026-05-22 03:44:25', 5.00, 'hourly', 'Indoor futsal shoes only.\nRespect booked slot end times.\nReport damaged turf to staff.'),
+(4, 'Tennis Court', 'tennis', 'An outdoor tennis facility designed to support recreational activities, skill development, and competitive play.', 'assets/tenniscourt.jpg', 'Sports Complex', '08:00:00', '22:00:00', 'active', '2026-05-22 03:44:25', 5.00, 'hourly', 'Proper tennis shoes required.\r\nRespect booked court times.\r\nReport equipment issues to staff.'),
+(5, 'Volleyball Court', 'volleyball', 'An indoor volleyball facility designed for team training, recreational games, and organized competitions.', 'assets/volleyballcourt.webp', 'Sports Complex', '08:00:00', '22:00:00', 'active', '2026-05-22 03:44:25', 5.00, 'hourly', 'Indoor court shoes only.\nMaximum players per court as posted.\nVacate on time for the next booking.'),
+(6, 'Gym Room', 'gym', 'A fitness facility equipped to support strength training, cardiovascular exercise, and general wellness activities.', 'assets/gymroom.jpg', 'Block A', '08:00:00', '22:00:00', 'active', '2026-05-22 03:44:25', 5.00, 'hourly', 'Wipe equipment after use.\nProper athletic attire required.\nRe-rack weights after use.'),
+(7, 'Swimming Pool', 'swimming', 'An Olympic-size swimming pool suitable for swimming practice, fitness training, and recreational use.', 'assets/swimmingpool.jpg', 'Aquatic Center', '08:00:00', '20:00:00', 'active', '2026-05-22 03:44:25', 5.00, 'hourly', 'Shower before entering the pool.\nNo running on pool deck.\nFollow lifeguard instructions at all times.'),
+(8, 'Track Field', 'track', 'An outdoor track and field facility suitable for running, athletic training, and sports-related events.', 'assets/trackfield.webp', 'Stadium', '06:00:00', '22:00:00', 'active', '2026-05-22 03:44:25', 5.00, 'hourly', 'Stay in your assigned lane when busy.\nNo spikes on synthetic surface unless permitted.\nYield to official events.'),
+(9, 'Snooker Room', 'snooker', 'An indoor recreational facility equipped with snooker tables for leisure and social activities.', 'assets/snookerroom.jpg', 'Sports Complex', '08:00:00', '22:00:00', 'active', '2026-05-22 03:52:41', 5.00, 'hourly', 'Keep noise to a minimum.\nReturn cues and balls after play.\nNo food at the tables.'),
+(10, 'Gym Room', 'gym', 'A fitness facility equipped to support strength training, cardiovascular exercise, and general wellness activities.', 'assets/gymroom.jpg', 'Block A', '08:00:00', '22:00:00', 'active', '2026-05-22 04:02:56', 5.00, 'hourly', 'Wipe equipment after use.\nProper athletic attire required.\nRe-rack weights after use.'),
+(11, 'Swimming Pool', 'swimming', 'An Olympic-size swimming pool suitable for swimming practice, fitness training, and recreational use.', 'assets/swimmingpool.jpg', 'Aquatic Center', '08:00:00', '20:00:00', 'active', '2026-05-22 04:02:56', 5.00, 'hourly', 'Shower before entering the pool.\nNo running on pool deck.\nFollow lifeguard instructions at all times.'),
+(12, 'Track Field', 'track', 'An outdoor track and field facility suitable for running, athletic training, and sports-related events.', 'assets/trackfield.webp', 'Stadium', '06:00:00', '22:00:00', 'active', '2026-05-22 04:02:56', 5.00, 'hourly', 'Stay in your assigned lane when busy.\nNo spikes on synthetic surface unless permitted.\nYield to official events.');
 
 -- --------------------------------------------------------
 
@@ -165,6 +168,33 @@ CREATE TABLE `futsal_court` (
 INSERT INTO `futsal_court` (`court_id`, `court_name`, `status`, `created_at`) VALUES
 (1, 'Court 1', 'available', '2026-05-22 03:43:25'),
 (2, 'Court 2', 'available', '2026-05-22 03:43:25');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `notifications`
+--
+
+CREATE TABLE `notifications` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `message` text NOT NULL,
+  `is_read` tinyint(1) NOT NULL DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `notifications`
+--
+
+INSERT INTO `notifications` (`id`, `user_id`, `title`, `message`, `is_read`, `created_at`) VALUES
+(8, 7, 'test2', '123456', 0, '2026-05-25 13:27:39'),
+(9, 11, 'test2', '123456', 1, '2026-05-25 13:27:39'),
+(10, 14, 'test2', '123456', 0, '2026-05-25 13:27:39'),
+(11, 15, 'test2', '123456', 0, '2026-05-25 13:27:39'),
+(12, 16, 'test2', '123456', 0, '2026-05-25 13:27:39'),
+(13, 17, 'test2', '123456', 0, '2026-05-25 13:27:39');
 
 -- --------------------------------------------------------
 
@@ -304,6 +334,13 @@ ALTER TABLE `futsal_court`
   ADD PRIMARY KEY (`court_id`);
 
 --
+-- Indexes for table `notifications`
+--
+ALTER TABLE `notifications`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_user_created` (`user_id`,`created_at`);
+
+--
 -- Indexes for table `snooker_room`
 --
 ALTER TABLE `snooker_room`
@@ -363,6 +400,12 @@ ALTER TABLE `futsal_court`
   MODIFY `court_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
+-- AUTO_INCREMENT for table `notifications`
+--
+ALTER TABLE `notifications`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+
+--
 -- AUTO_INCREMENT for table `snooker_room`
 --
 ALTER TABLE `snooker_room`
@@ -385,6 +428,16 @@ ALTER TABLE `users`
 --
 ALTER TABLE `volleyball_court`
   MODIFY `court_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- Constraints for dumped tables
+--
+
+--
+-- Constraints for table `notifications`
+--
+ALTER TABLE `notifications`
+  ADD CONSTRAINT `notifications_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
