@@ -11,6 +11,7 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'student') {
 }
 
 require __DIR__ . '/db.php';
+require_once __DIR__ . '/includes/notification_helpers.php';
 
 $student_name = isset($_SESSION['full_name']) && trim($_SESSION['full_name']) !== ''
     ? htmlspecialchars($_SESSION['full_name'], ENT_QUOTES, 'UTF-8')
@@ -27,6 +28,19 @@ $cancel_msg = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'cancel_booking') {
     $booking_id = (int)$_POST['booking_id'];
     $user_id = (int)$_SESSION['user_id'];
+    $bookingMeta = null;
+    $metaStmt = mysqli_prepare(
+        $conn,
+        "SELECT facility_type, booking_date, start_time, end_time
+         FROM bookings WHERE booking_id = ? AND user_id = ? LIMIT 1"
+    );
+    if ($metaStmt) {
+        mysqli_stmt_bind_param($metaStmt, "ii", $booking_id, $user_id);
+        mysqli_stmt_execute($metaStmt);
+        $metaRes = mysqli_stmt_get_result($metaStmt);
+        $bookingMeta = $metaRes ? mysqli_fetch_assoc($metaRes) : null;
+        mysqli_stmt_close($metaStmt);
+    }
     
     // Update booking status to cancelled if it's currently pending or approved and belongs to this user
     $sql = "UPDATE bookings SET booking_status = 'cancelled' WHERE booking_id = ? AND user_id = ? AND booking_status IN ('pending', 'approved')";
@@ -36,6 +50,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         mysqli_stmt_execute($stmt);
         if (mysqli_stmt_affected_rows($stmt) > 0) {
             $cancel_msg = "Booking #{$booking_id} has been cancelled successfully.";
+            if (is_array($bookingMeta)) {
+                $facility = notifications_facility_label((string) ($bookingMeta['facility_type'] ?? ''));
+                $time = substr((string) ($bookingMeta['start_time'] ?? ''), 0, 5) . ' - ' . substr((string) ($bookingMeta['end_time'] ?? ''), 0, 5);
+                $studentName = trim((string) ($_SESSION['full_name'] ?? 'A student'));
+                notifications_send_to_roles(
+                    $conn,
+                    ['staff', 'admin'],
+                    'Student Booking Cancelled',
+                    "{$studentName} cancelled booking #{$booking_id} for {$facility} on {$bookingMeta['booking_date']} ({$time})."
+                );
+            }
         } else {
             $cancel_msg = "Could not cancel booking. It may have already been processed.";
         }
@@ -136,13 +161,14 @@ if ($stmt) {
                             <th>Date</th>
                             <th>Time</th>
                             <th>Status</th>
+                            <th>Remarks</th>
                             <th class="pe-4 text-end">Action</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php if (empty($bookings)): ?>
                         <tr>
-                            <td colspan="6" class="text-center py-4 text-muted">You have no bookings yet.</td>
+                            <td colspan="7" class="text-center py-4 text-muted">You have no bookings yet.</td>
                         </tr>
                         <?php else: ?>
                             <?php foreach ($bookings as $b): 
@@ -161,8 +187,16 @@ if ($stmt) {
                                     <span class="badge rounded-pill <?php echo $status_class; ?>">
                                         <?php echo ucfirst(htmlspecialchars($b['booking_status'])); ?>
                                     </span>
-                                    <?php if ($b['booking_status'] === 'rejected' && !empty($b['reject_reason'])): ?>
-                                        <br><small class="text-danger d-block mt-1">Reason: <?php echo htmlspecialchars($b['reject_reason']); ?></small>
+                                </td>
+                                <td>
+                                    <?php if ($b['booking_status'] === 'rejected'): ?>
+                                        <?php if (!empty($b['reject_reason'])): ?>
+                                            <span class="text-danger small fw-semibold"><?php echo htmlspecialchars($b['reject_reason']); ?></span>
+                                        <?php else: ?>
+                                            <span class="text-muted small">No remarks provided.</span>
+                                        <?php endif; ?>
+                                    <?php else: ?>
+                                        <span class="text-muted small">—</span>
                                     <?php endif; ?>
                                 </td>
                                 <td class="pe-4 text-end">

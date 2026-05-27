@@ -19,6 +19,7 @@ if (!isset($admin_page_title)) {
         </div>
         <div class="d-flex align-items-center gap-3 flex-wrap">
             <div class="datetime-pill" id="liveDateTime"></div>
+            <?php include __DIR__ . '/staff_admin_notification_bell.php'; ?>
             <div class="avatar" title="<?php echo $admin_email !== '' ? $admin_email : $admin_name; ?>">
                 <?php
                 $parts = preg_split('/\s+/', trim((string) ($_SESSION['full_name'] ?? 'A')));

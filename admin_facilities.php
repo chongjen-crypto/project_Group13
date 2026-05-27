@@ -5,6 +5,7 @@
 require_once __DIR__ . '/includes/admin_auth.php';
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/includes/facility_admin_helpers.php';
+require_once __DIR__ . '/includes/notification_helpers.php';
 
 $admin_nav_active = 'facilities';
 $admin_page_title = 'Facility Management';
@@ -28,6 +29,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'update_facility') {
         $facility_id = (int) ($_POST['facility_id'] ?? 0);
+        $before = facility_fetch_one($conn, $facility_id);
+        $newUiStatus = (string) ($_POST['ui_status'] ?? 'available');
         $result = facility_update($conn, $facility_id, [
             'facility_name' => $_POST['facility_name'] ?? '',
             'description' => $_POST['description'] ?? '',
@@ -35,12 +38,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'opening_time' => $_POST['opening_time'] ?? '',
             'closing_time' => $_POST['closing_time'] ?? '',
             'image' => $_POST['image'] ?? '',
-            'ui_status' => $_POST['ui_status'] ?? 'available',
+            'ui_status' => $newUiStatus,
             'price_amount' => $_POST['price_amount'] ?? 0,
             'price_mode' => $_POST['price_mode'] ?? 'hourly',
             'rules' => $_POST['rules'] ?? '',
         ]);
         if ($result['success']) {
+            $wasAvailable = is_array($before) && ((string) ($before['status'] ?? '') === 'active');
+            if ($wasAvailable && $newUiStatus === 'unavailable') {
+                $facilityName = trim((string) ($_POST['facility_name'] ?? 'This facility'));
+                notifications_send_to_all_students(
+                    $conn,
+                    'Facility Unavailable',
+                    $facilityName . ' is now unavailable for booking. Please choose another facility.'
+                );
+            }
             header('Location: admin_facilities.php?msg=saved');
             exit();
         }
@@ -49,6 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $facility_id = (int) ($_POST['facility_id'] ?? 0);
         $row = facility_fetch_one($conn, $facility_id);
         if ($row) {
+            $wasAvailable = ((string) ($row['status'] ?? '') === 'active');
             $newUi = ($row['status'] ?? '') === 'active' ? 'unavailable' : 'available';
             $result = facility_update($conn, $facility_id, [
                 'facility_name' => $row['facility_name'],
@@ -63,6 +76,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'rules' => $row['rules'] ?? '',
             ]);
             if ($result['success']) {
+                if ($wasAvailable && $newUi === 'unavailable') {
+                    $facilityName = trim((string) ($row['facility_name'] ?? 'This facility'));
+                    notifications_send_to_all_students(
+                        $conn,
+                        'Facility Unavailable',
+                        $facilityName . ' is now unavailable for booking. Please choose another facility.'
+                    );
+                }
                 header('Location: admin_facilities.php?msg=saved');
                 exit();
             }

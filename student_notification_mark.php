@@ -1,11 +1,11 @@
 <?php
 /**
- * Mark student notification(s) as read (JSON).
+ * Mark notification(s) as read (JSON) for logged-in users.
  */
 session_start();
 header('Content-Type: application/json');
 
-if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'student' || !isset($_SESSION['user_id'])) {
+if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['student', 'staff', 'admin'], true) || !isset($_SESSION['user_id'])) {
     http_response_code(403);
     echo json_encode(['ok' => false, 'error' => 'Unauthorized']);
     exit;

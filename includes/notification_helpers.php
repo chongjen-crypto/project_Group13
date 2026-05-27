@@ -51,6 +51,94 @@ function notifications_send_to_all_students(mysqli $conn, string $title, string 
 }
 
 /**
+ * @return array{success: bool, message: string}
+ */
+function notifications_send_to_user(mysqli $conn, int $user_id, string $title, string $message): array
+{
+    notifications_ensure_table($conn);
+    if ($user_id <= 0) {
+        return ['success' => false, 'message' => 'Invalid user.'];
+    }
+    $title = trim($title);
+    $message = trim($message);
+    if ($title === '' || $message === '') {
+        return ['success' => false, 'message' => 'Title and message are required.'];
+    }
+
+    $stmt = mysqli_prepare(
+        $conn,
+        'INSERT INTO notifications (user_id, title, message) VALUES (?, ?, ?)'
+    );
+    if (!$stmt) {
+        return ['success' => false, 'message' => 'Database error.'];
+    }
+    mysqli_stmt_bind_param($stmt, 'iss', $user_id, $title, $message);
+    $ok = mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
+
+    return [
+        'success' => $ok,
+        'message' => $ok ? 'Notification sent.' : 'Could not send notification.',
+    ];
+}
+
+/**
+ * @param list<string> $roles
+ * @return array{success: bool, message: string, count: int}
+ */
+function notifications_send_to_roles(mysqli $conn, array $roles, string $title, string $message): array
+{
+    notifications_ensure_table($conn);
+    $cleanRoles = [];
+    foreach ($roles as $role) {
+        $r = strtolower(trim((string) $role));
+        if (in_array($r, ['student', 'staff', 'admin'], true) && !in_array($r, $cleanRoles, true)) {
+            $cleanRoles[] = $r;
+        }
+    }
+    if ($cleanRoles === []) {
+        return ['success' => false, 'message' => 'No valid roles provided.', 'count' => 0];
+    }
+
+    $placeholders = implode(',', array_fill(0, count($cleanRoles), '?'));
+    $types = str_repeat('s', count($cleanRoles));
+    $sql = "INSERT INTO notifications (user_id, title, message)
+            SELECT id, ?, ? FROM users WHERE role IN ({$placeholders})";
+    $stmt = mysqli_prepare($conn, $sql);
+    if (!$stmt) {
+        return ['success' => false, 'message' => 'Database error.', 'count' => 0];
+    }
+    $params = array_merge([$title, $message], $cleanRoles);
+    mysqli_stmt_bind_param($stmt, 'ss' . $types, ...$params);
+    $ok = mysqli_stmt_execute($stmt);
+    $count = $ok ? (int) mysqli_stmt_affected_rows($stmt) : 0;
+    mysqli_stmt_close($stmt);
+
+    return [
+        'success' => $ok,
+        'message' => $ok ? "Notification sent to {$count} user(s)." : 'Could not send notification.',
+        'count' => $count,
+    ];
+}
+
+function notifications_facility_label(string $facility_type): string
+{
+    $map = [
+        'snooker' => 'Snooker Room',
+        'gym' => 'Gym Room',
+        'swimming' => 'Swimming Pool',
+        'track' => 'Track Field',
+        'badminton' => 'Badminton Court',
+        'basketball' => 'Basketball Court',
+        'futsal' => 'Futsal Court',
+        'tennis' => 'Tennis Court',
+        'volleyball' => 'Volleyball Court',
+    ];
+    $type = strtolower(trim($facility_type));
+    return $map[$type] ?? ucfirst(str_replace('_', ' ', $type));
+}
+
+/**
  * @return list<array<string, mixed>>
  */
 function notifications_fetch_for_user(mysqli $conn, int $user_id, int $limit = 30): array

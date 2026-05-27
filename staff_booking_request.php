@@ -12,25 +12,67 @@ if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['staff', 'admin']
 }
 
 require __DIR__ . '/db.php';
+require_once __DIR__ . '/includes/notification_helpers.php';
 
 $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 $msg = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $action = $_POST['action'];
+    $bookingMeta = null;
+    $metaStmt = mysqli_prepare(
+        $conn,
+        "SELECT b.user_id, b.facility_type, b.booking_date, b.start_time, b.end_time, u.full_name
+         FROM bookings b
+         JOIN users u ON b.user_id = u.id
+         WHERE b.booking_id = ? LIMIT 1"
+    );
+    if ($metaStmt) {
+        mysqli_stmt_bind_param($metaStmt, "i", $id);
+        mysqli_stmt_execute($metaStmt);
+        $metaRes = mysqli_stmt_get_result($metaStmt);
+        $bookingMeta = $metaRes ? mysqli_fetch_assoc($metaRes) : null;
+        mysqli_stmt_close($metaStmt);
+    }
+
     if ($action === 'approve') {
         $sql = "UPDATE bookings SET booking_status = 'approved' WHERE booking_id = ?";
         $stmt = mysqli_prepare($conn, $sql);
         mysqli_stmt_bind_param($stmt, "i", $id);
         mysqli_stmt_execute($stmt);
+        $updated = mysqli_stmt_affected_rows($stmt) > 0;
+        mysqli_stmt_close($stmt);
         $msg = 'Booking approved.';
+        if ($updated && is_array($bookingMeta)) {
+            $facility = notifications_facility_label((string) ($bookingMeta['facility_type'] ?? ''));
+            $time = substr((string) ($bookingMeta['start_time'] ?? ''), 0, 5) . ' - ' . substr((string) ($bookingMeta['end_time'] ?? ''), 0, 5);
+            notifications_send_to_user(
+                $conn,
+                (int) $bookingMeta['user_id'],
+                'Booking Request Accepted',
+                "Your booking #{$id} for {$facility} on {$bookingMeta['booking_date']} ({$time}) has been accepted."
+            );
+        }
     } elseif ($action === 'reject') {
         $reason = trim($_POST['reject_reason'] ?? '');
         $sql = "UPDATE bookings SET booking_status = 'rejected', reject_reason = ? WHERE booking_id = ?";
         $stmt = mysqli_prepare($conn, $sql);
         mysqli_stmt_bind_param($stmt, "si", $reason, $id);
         mysqli_stmt_execute($stmt);
+        $updated = mysqli_stmt_affected_rows($stmt) > 0;
+        mysqli_stmt_close($stmt);
         $msg = 'Booking rejected.';
+        if ($updated && is_array($bookingMeta)) {
+            $facility = notifications_facility_label((string) ($bookingMeta['facility_type'] ?? ''));
+            $time = substr((string) ($bookingMeta['start_time'] ?? ''), 0, 5) . ' - ' . substr((string) ($bookingMeta['end_time'] ?? ''), 0, 5);
+            $rejectNote = $reason !== '' ? " Reason: {$reason}" : '';
+            notifications_send_to_user(
+                $conn,
+                (int) $bookingMeta['user_id'],
+                'Booking Request Rejected',
+                "Your booking #{$id} for {$facility} on {$bookingMeta['booking_date']} ({$time}) was rejected.{$rejectNote}"
+            );
+        }
     }
 }
 

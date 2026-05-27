@@ -350,3 +350,4 @@
 
     section[id] { scroll-margin-top: 88px; }
 </style>
+<?php include __DIR__ . '/student_notification_styles.php'; ?>

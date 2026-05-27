@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 25, 2026 at 04:50 PM
+-- Generation Time: May 27, 2026 at 05:18 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -106,7 +106,9 @@ INSERT INTO `bookings` (`booking_id`, `user_id`, `facility_type`, `court_id`, `b
 (5, 11, 'badminton', 1, '2026-05-23', '11:00:00', '12:00:00', '', 'cancelled', 'tng', 5.00, 'paid', '2026-05-23 06:35:14', NULL),
 (6, 11, 'badminton', 1, '2026-05-23', '08:00:00', '09:00:00', '', 'pending', 'in_app', 5.00, 'paid', '2026-05-23 07:12:51', NULL),
 (7, 11, 'badminton', 1, '2026-05-23', '09:00:00', '10:00:00', '', 'pending', 'in_app', 5.00, 'paid', '2026-05-23 07:12:51', NULL),
-(8, 11, 'badminton', 1, '2026-05-23', '10:00:00', '11:00:00', '', 'pending', 'in_app', 5.00, 'paid', '2026-05-23 07:12:51', NULL);
+(8, 11, 'badminton', 1, '2026-05-23', '10:00:00', '11:00:00', '', 'pending', 'in_app', 5.00, 'paid', '2026-05-23 07:12:51', NULL),
+(9, 11, 'badminton', 1, '2026-05-28', '21:00:00', '22:00:00', '', 'cancelled', 'tng', 5.00, 'paid', '2026-05-27 14:49:59', NULL),
+(10, 11, 'tennis', 1, '2026-05-28', '09:00:00', '10:00:00', '', 'rejected', 'in_app', 8.00, 'paid', '2026-05-27 15:04:35', '1234');
 
 -- --------------------------------------------------------
 
@@ -135,7 +137,7 @@ CREATE TABLE `facilities` (
 --
 
 INSERT INTO `facilities` (`facility_id`, `facility_name`, `facility_type`, `description`, `image`, `location`, `opening_time`, `closing_time`, `status`, `created_at`, `price_amount`, `price_mode`, `rules`) VALUES
-(1, 'Badminton Court', 'badminton', 'A well-maintained indoor badminton facility suitable for recreational play, training sessions, and organized matches.', 'assets/badmintoncourt.webp', 'Sports Complex', '08:00:00', '22:00:00', 'active', '2026-05-22 03:44:25', 9.10, 'hourly', 'Non-marking indoor sports shoes only.\r\nMaximum session length follows your booking slot.\r\nFood and drinks (except sealed water) are not allowed on court.'),
+(1, 'Badminton Court', 'badminton', 'A well-maintained indoor badminton facility suitable for recreational play, training sessions, and organized matches.', 'assets/badmintoncourt.webp', 'Sports Complex', '08:00:00', '22:00:00', 'closed', '2026-05-22 03:44:25', 9.10, 'hourly', 'Non-marking indoor sports shoes only.\r\nMaximum session length follows your booking slot.\r\nFood and drinks (except sealed water) are not allowed on court.'),
 (2, 'Basketball Court', 'basketball', 'A full-size basketball facility suitable for individual practice, team training, and competitive matches.', 'assets/basketballcourt.jpeg', 'Sports Complex', '08:00:00', '22:00:00', 'active', '2026-05-22 03:44:25', 5.00, 'hourly', 'Indoor basketball shoes only.\nShare court fairly during open slots.\nNo dunking on portable hoops unless allowed.'),
 (3, 'Futsal Court', 'futsal', 'An indoor futsal facility suitable for team practice, recreational matches, and organized tournaments.', 'assets/futsalcourt.jpg', 'Sports Complex', '08:00:00', '22:00:00', 'active', '2026-05-22 03:44:25', 5.00, 'hourly', 'Indoor futsal shoes only.\nRespect booked slot end times.\nReport damaged turf to staff.'),
 (4, 'Tennis Court', 'tennis', 'An outdoor tennis facility designed to support recreational activities, skill development, and competitive play.', 'assets/tenniscourt.jpg', 'Sports Complex', '08:00:00', '22:00:00', 'active', '2026-05-22 03:44:25', 5.00, 'hourly', 'Proper tennis shoes required.\r\nRespect booked court times.\r\nReport equipment issues to staff.'),
@@ -194,7 +196,22 @@ INSERT INTO `notifications` (`id`, `user_id`, `title`, `message`, `is_read`, `cr
 (10, 14, 'test2', '123456', 0, '2026-05-25 13:27:39'),
 (11, 15, 'test2', '123456', 0, '2026-05-25 13:27:39'),
 (12, 16, 'test2', '123456', 0, '2026-05-25 13:27:39'),
-(13, 17, 'test2', '123456', 0, '2026-05-25 13:27:39');
+(13, 17, 'test2', '123456', 0, '2026-05-25 13:27:39'),
+(14, 11, 'Booking Request Accepted', 'Your booking #9 for Badminton Court on 2026-05-28 (21:00 - 22:00) has been accepted.', 1, '2026-05-27 14:51:33'),
+(15, 5, 'Student Booking Cancelled', 'student cancelled booking #9 for Badminton Court on 2026-05-28 (21:00 - 22:00).', 0, '2026-05-27 14:52:03'),
+(16, 12, 'Student Booking Cancelled', 'student cancelled booking #9 for Badminton Court on 2026-05-28 (21:00 - 22:00).', 0, '2026-05-27 14:52:03'),
+(17, 13, 'Student Booking Cancelled', 'student cancelled booking #9 for Badminton Court on 2026-05-28 (21:00 - 22:00).', 0, '2026-05-27 14:52:03'),
+(18, 18, 'Student Booking Cancelled', 'student cancelled booking #9 for Badminton Court on 2026-05-28 (21:00 - 22:00).', 0, '2026-05-27 14:52:03'),
+(19, 19, 'Student Booking Cancelled', 'student cancelled booking #9 for Badminton Court on 2026-05-28 (21:00 - 22:00).', 0, '2026-05-27 14:52:03'),
+(20, 20, 'Student Booking Cancelled', 'student cancelled booking #9 for Badminton Court on 2026-05-28 (21:00 - 22:00).', 0, '2026-05-27 14:52:03'),
+(21, 21, 'Student Booking Cancelled', 'student cancelled booking #9 for Badminton Court on 2026-05-28 (21:00 - 22:00).', 0, '2026-05-27 14:52:03'),
+(22, 7, 'Facility Unavailable', 'Badminton Court is now unavailable for booking. Please choose another facility.', 0, '2026-05-27 15:03:49'),
+(23, 11, 'Facility Unavailable', 'Badminton Court is now unavailable for booking. Please choose another facility.', 1, '2026-05-27 15:03:49'),
+(24, 14, 'Facility Unavailable', 'Badminton Court is now unavailable for booking. Please choose another facility.', 0, '2026-05-27 15:03:49'),
+(25, 15, 'Facility Unavailable', 'Badminton Court is now unavailable for booking. Please choose another facility.', 0, '2026-05-27 15:03:49'),
+(26, 16, 'Facility Unavailable', 'Badminton Court is now unavailable for booking. Please choose another facility.', 0, '2026-05-27 15:03:49'),
+(27, 17, 'Facility Unavailable', 'Badminton Court is now unavailable for booking. Please choose another facility.', 0, '2026-05-27 15:03:49'),
+(29, 11, 'Booking Request Rejected', 'Your booking #10 for Tennis Court on 2026-05-28 (09:00 - 10:00) was rejected. Reason: 1234', 1, '2026-05-27 15:05:15');
 
 -- --------------------------------------------------------
 
@@ -385,7 +402,7 @@ ALTER TABLE `basketball_court`
 -- AUTO_INCREMENT for table `bookings`
 --
 ALTER TABLE `bookings`
-  MODIFY `booking_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `booking_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `facilities`
@@ -403,7 +420,7 @@ ALTER TABLE `futsal_court`
 -- AUTO_INCREMENT for table `notifications`
 --
 ALTER TABLE `notifications`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
 
 --
 -- AUTO_INCREMENT for table `snooker_room`

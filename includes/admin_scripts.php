@@ -47,3 +47,4 @@
     });
 })();
 </script>
+<?php include __DIR__ . '/student_notification_scripts.php'; ?>
