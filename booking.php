@@ -47,7 +47,8 @@ if ($facility === null && ($facility_param !== '' || $type_param !== '')) {
         $facility_error = 'Facility not found or is not available for booking.';
     }
 } elseif ($facility === null) {
-    $facility_error = 'No facility selected. Please choose a facility from your dashboard.';
+    require_once __DIR__ . '/includes/facility_admin_helpers.php';
+    $facility_picker_list = facilities_fetch_student_cards($conn);
 }
 
 // Default images when DB image is empty
@@ -245,6 +246,76 @@ $booked_flash = isset($_GET['booked']) && $_GET['booked'] === '1';
             font-size: 0.9rem;
         }
         .loading-inline.show { display: inline-flex; }
+
+        /* Facility picker (no facility selected yet) */
+        .card-soft {
+            background: #fff;
+            border-radius: var(--card-radius);
+            border: 1px solid #eef0f3;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.05);
+            transition: transform 0.22s ease, box-shadow 0.22s ease;
+            height: 100%;
+        }
+        @media (hover: hover) {
+            .facility-pick-link:not(.facility-unavailable) .card-soft:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 12px 32px rgba(0,0,0,0.1);
+            }
+        }
+        .facility-img {
+            height: clamp(120px, 28vw, 160px);
+            overflow: hidden;
+            background: #e5e7eb;
+        }
+        .facility-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .facility-body { padding: 1rem 1.1rem 1.15rem; }
+        .facility-body h6 { font-weight: 700; margin-bottom: 0.35rem; }
+        .facility-body p { font-size: 0.82rem; color: #6b7280; margin-bottom: 0.75rem; }
+        a.facility-pick-link { color: inherit; text-decoration: none; display: block; height: 100%; }
+        .facility-pick-link { display: block; height: 100%; }
+
+        /* Unavailable facility — whole card greyed out (div or link wrapper) */
+        .facility-pick-link.facility-unavailable .card-soft {
+            background: #e5e7eb;
+            border-color: #d1d5db;
+            box-shadow: none;
+            opacity: 0.78;
+        }
+        .facility-pick-link.facility-unavailable .facility-img {
+            position: relative;
+        }
+        .facility-pick-link.facility-unavailable .facility-img::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: rgba(55, 65, 81, 0.35);
+            pointer-events: none;
+        }
+        .facility-pick-link.facility-unavailable .facility-img img {
+            filter: grayscale(1) brightness(0.75);
+        }
+        .facility-pick-link.facility-unavailable .facility-body h6,
+        .facility-pick-link.facility-unavailable .facility-body p {
+            color: #6b7280;
+        }
+        .facility-pick-link.facility-unavailable .badge.bg-dark {
+            background: #9ca3af !important;
+        }
+        @media (hover: hover) {
+            .facility-pick-link.facility-unavailable:hover .card-soft,
+            .facility-pick-link.facility-unavailable .card-soft:hover {
+                transform: none;
+                box-shadow: none;
+            }
+            .facility-pick-link.facility-unavailable:hover .facility-img img {
+                transform: none;
+            }
+        }
     </style>
 </head>
 <body>
@@ -296,10 +367,69 @@ $booked_flash = isset($_GET['booked']) && $_GET['booked'] === '1';
                 <div class="alert alert-warning mb-3">
                     <i class="bi bi-exclamation-triangle me-2"></i><?php echo htmlspecialchars($facility_error, ENT_QUOTES, 'UTF-8'); ?>
                 </div>
-                <a href="student_dashboard.php" class="btn btn-dark rounded-pill">
-                    <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+                <a href="booking.php" class="btn btn-dark rounded-pill">
+                    <i class="bi bi-arrow-left me-1"></i> Choose another facility
                 </a>
             </div>
+        <?php elseif ($facility === null): ?>
+            <h2 class="section-title"><i class="bi bi-building text-secondary"></i> Choose a facility</h2>
+            <p class="text-muted small mb-4">Select a facility below to continue with your booking.</p>
+            <?php if (empty($facility_picker_list)): ?>
+                <div class="booking-card text-center text-muted py-4">No facilities available at the moment.</div>
+            <?php else: ?>
+            <div class="row g-3 mb-4">
+                <?php foreach ($facility_picker_list as $f): ?>
+                <?php
+                $can_book = !empty($f['bookable']);
+                $book_href = 'booking.php?type=' . rawurlencode($f['facility_type']);
+                $fp = facility_pricing_get($f['facility_type'] ?? '', $conn);
+                ?>
+                <div class="col-12 col-sm-6 col-lg-4">
+                    <?php if ($can_book): ?>
+                    <a href="<?php echo htmlspecialchars($book_href, ENT_QUOTES, 'UTF-8'); ?>" class="facility-pick-link">
+                    <?php else: ?>
+                    <div class="facility-pick-link facility-unavailable">
+                    <?php endif; ?>
+                        <div class="card-soft overflow-hidden h-100">
+                            <div class="facility-img">
+                                <img src="<?php echo htmlspecialchars($f['image'], ENT_QUOTES, 'UTF-8'); ?>" alt="<?php echo htmlspecialchars($f['name'], ENT_QUOTES, 'UTF-8'); ?>" loading="lazy">
+                            </div>
+                            <div class="facility-body">
+                                <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
+                                    <h6 class="mb-0"><?php echo htmlspecialchars($f['name'], ENT_QUOTES, 'UTF-8'); ?></h6>
+                                    <span class="badge <?php echo htmlspecialchars($f['status_class'], ENT_QUOTES, 'UTF-8'); ?> rounded-pill" style="font-size: 0.65rem;">
+                                        <?php echo htmlspecialchars($f['status'], ENT_QUOTES, 'UTF-8'); ?>
+                                    </span>
+                                </div>
+                                <p class="mb-2"><?php echo htmlspecialchars($f['desc'], ENT_QUOTES, 'UTF-8'); ?></p>
+                                <?php if ($fp !== null): ?>
+                                <p class="small mb-2">
+                                    <span class="badge bg-dark rounded-pill px-2 py-1">
+                                        <?php echo htmlspecialchars(facility_pricing_format_rm((float) $fp['amount']), ENT_QUOTES, 'UTF-8'); ?>
+                                        <span class="opacity-75"> · <?php echo htmlspecialchars($fp['label'], ENT_QUOTES, 'UTF-8'); ?></span>
+                                    </span>
+                                </p>
+                                <?php endif; ?>
+                                <?php if ($can_book): ?>
+                                <span class="btn btn-dark w-100 btn-sm rounded-3">
+                                    <i class="bi bi-calendar-check me-1"></i> Book now
+                                </span>
+                                <?php else: ?>
+                                <span class="btn btn-secondary w-100 btn-sm rounded-3 disabled">
+                                    <i class="bi bi-slash-circle me-1"></i> Unavailable
+                                </span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    <?php if ($can_book): ?>
+                    </a>
+                    <?php else: ?>
+                    </div>
+                    <?php endif; ?>
+                </div>
+                <?php endforeach; ?>
+            </div>
+            <?php endif; ?>
         <?php else: ?>
 
             <div class="row g-3 mb-3">
@@ -315,7 +445,7 @@ $booked_flash = isset($_GET['booked']) && $_GET['booked'] === '1';
                     </div>
                 </div>
                 <div class="col-lg-4 d-flex align-items-stretch">
-                    <a href="student_dashboard.php" class="btn btn-outline-dark rounded-pill align-self-center w-100">
+                    <a href="booking.php" class="btn btn-outline-dark rounded-pill align-self-center w-100">
                         <i class="bi bi-arrow-left me-1"></i> Change facility
                     </a>
                 </div>
@@ -380,7 +510,9 @@ $booked_flash = isset($_GET['booked']) && $_GET['booked'] === '1';
                     </div>
                     <div class="col-md-5">
                         <label for="bookingPurpose" class="form-label small fw-semibold">Purpose (optional)</label>
-                        <textarea class="form-control rounded-3 mb-3" id="bookingPurpose" rows="3" placeholder="Training, club session, etc."></textarea>
+                        <textarea class="form-control rounded-3 mb-1" id="bookingPurpose" rows="3" placeholder="Training, club session, etc."></textarea>
+                        <div class="form-text mb-1"><span id="purposeCharCount">0 / 50 characters</span></div>
+                        <div id="purposeError" class="text-danger small mb-2 d-none"></div>
                         <button type="button" class="btn btn-dark btn-proceed w-100" id="btnProceed" disabled>
                             <i class="bi bi-credit-card me-1"></i> Proceed to Payment
                         </button>
@@ -397,6 +529,7 @@ $booked_flash = isset($_GET['booked']) && $_GET['booked'] === '1';
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="includes/text_input_validation.js"></script>
 
 <script>
 (function () {
@@ -700,6 +833,14 @@ $booked_flash = isset($_GET['booked']) && $_GET['booked'] === '1';
             return;
         }
 
+        var purposeEl = document.getElementById('bookingPurpose');
+        var purposeResult = TextInputValidation.validateText(purposeEl ? purposeEl.value : '', false, 50);
+        TextInputValidation.showFieldError(purposeEl, document.getElementById('purposeError'), purposeResult.ok ? '' : purposeResult.error);
+        if (!purposeResult.ok) {
+            showAlert('danger', purposeResult.error);
+            return;
+        }
+
         btnProceed.disabled = true;
         var body = new FormData();
         body.append('action', 'prepare_checkout');
@@ -733,6 +874,15 @@ $booked_flash = isset($_GET['booked']) && $_GET['booked'] === '1';
     enableSection(stepCourt, false);
     enableSection(stepSlots, false);
     enableSection(stepSummary, false);
+
+    var purposeInput = document.getElementById('bookingPurpose');
+    if (purposeInput) {
+        TextInputValidation.bindLimitedTextInput(
+            purposeInput,
+            document.getElementById('purposeError'),
+            { required: false, counterEl: document.getElementById('purposeCharCount'), maxChars: 50 }
+        );
+    }
 })();
 </script>
 <?php include __DIR__ . '/includes/student_notification_scripts.php'; ?>

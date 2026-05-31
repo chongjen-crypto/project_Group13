@@ -21,6 +21,9 @@ if (!isset($admin_nav_active)) {
         <a href="admin_facilities.php" class="nav-link-sidebar <?php echo $admin_nav_active === 'facilities' ? 'active' : ''; ?>">
             <i class="bi bi-building"></i> Facility Management
         </a>
+        <a href="admin_booking_requests.php" class="nav-link-sidebar <?php echo $admin_nav_active === 'requests' ? 'active' : ''; ?>">
+            <i class="bi bi-inbox"></i> Booking Requests
+        </a>
         <a href="admin_booking_reports.php" class="nav-link-sidebar <?php echo $admin_nav_active === 'reports' ? 'active' : ''; ?>">
             <i class="bi bi-graph-up-arrow"></i> Booking Reports
         </a>

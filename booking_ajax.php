@@ -17,6 +17,7 @@ require __DIR__ . '/db.php';
 require_once __DIR__ . '/includes/booking_helpers.php';
 require_once __DIR__ . '/includes/facility_pricing.php';
 require_once __DIR__ . '/includes/payment_checkout.php';
+require_once __DIR__ . '/includes/text_input_helpers.php';
 
 $action = $_POST['action'] ?? $_GET['action'] ?? '';
 
@@ -94,6 +95,10 @@ if ($action === 'prepare_checkout' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $booking_date  = trim((string) ($_POST['booking_date'] ?? ''));
     $court_raw     = $_POST['court_id'] ?? null;
     $purpose       = trim((string) ($_POST['purpose'] ?? ''));
+    $purposeCheck  = text_input_validate($purpose, false);
+    if (!$purposeCheck['valid']) {
+        booking_json_response(['success' => false, 'message' => $purposeCheck['error']], 400);
+    }
 
     $slots_json = $_POST['slots'] ?? '[]';
     $starts = is_string($slots_json) ? json_decode($slots_json, true) : $slots_json;
@@ -194,6 +199,10 @@ if ($action === 'create_booking' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $booking_date  = trim((string) ($_POST['booking_date'] ?? ''));
     $court_raw     = $_POST['court_id'] ?? null;
     $purpose       = trim((string) ($_POST['purpose'] ?? ''));
+    $purposeCheck  = text_input_validate($purpose, false);
+    if (!$purposeCheck['valid']) {
+        booking_json_response(['success' => false, 'message' => $purposeCheck['error']], 400);
+    }
 
     $slots_json = $_POST['slots'] ?? '[]';
     if (is_string($slots_json)) {

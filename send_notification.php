@@ -23,6 +23,7 @@ if ($role === 'staff') {
 
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/includes/notification_helpers.php';
+require_once __DIR__ . '/includes/text_input_helpers.php';
 
 $sent = false;
 $sent_message = '';
@@ -36,6 +37,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($title_prefill === '' || $message_prefill === '') {
         $error = 'Both title and message are required.';
     } else {
+        $titleCheck = text_input_validate($title_prefill, true);
+        $messageCheck = text_input_validate($message_prefill, true);
+        if (!$titleCheck['valid']) {
+            $error = 'Title: ' . $titleCheck['error'];
+        } elseif (!$messageCheck['valid']) {
+            $error = 'Message: ' . $messageCheck['error'];
+        } else {
         $result = notifications_send_to_all_students($conn, $title_prefill, $message_prefill);
         if ($result['success']) {
             $sent = true;
@@ -44,6 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message_prefill = '';
         } else {
             $error = $result['message'];
+        }
         }
     }
 }
@@ -104,6 +113,8 @@ if ($role === 'admin') {
                         placeholder="e.g. Pool maintenance notice"
                         value="<?php echo htmlspecialchars($title_prefill, ENT_QUOTES, 'UTF-8'); ?>"
                     >
+                    <div class="form-text"><span id="titleCharCount">0 / <?php echo TEXT_INPUT_MAX_CHARS; ?> characters</span></div>
+                    <div id="titleError" class="text-danger small mt-1 d-none"></div>
                 </div>
                 <div class="mb-4">
                     <label for="notifMessage" class="form-label fw-semibold">Message</label>
@@ -115,9 +126,11 @@ if ($role === 'admin') {
                         required
                         placeholder="Enter the information to send to all students…"
                     ><?php echo htmlspecialchars($message_prefill, ENT_QUOTES, 'UTF-8'); ?></textarea>
+                    <div class="form-text"><span id="messageCharCount">0 / <?php echo TEXT_INPUT_MAX_CHARS; ?> characters</span></div>
+                    <div id="messageError" class="text-danger small mt-1 d-none"></div>
                 </div>
                 <div class="d-flex flex-wrap gap-2">
-                    <button type="submit" class="btn btn-dark rounded-pill px-4">
+                    <button type="submit" class="btn btn-dark rounded-pill px-4" id="btnSendNotif">
                         <i class="bi bi-send me-1"></i> Send
                     </button>
                     <a href="view_sent_notifications.php" class="btn btn-outline-primary rounded-pill px-4">
@@ -131,5 +144,27 @@ if ($role === 'admin') {
 </div>
 
 <?php include __DIR__ . '/includes/admin_scripts.php'; ?>
+<script src="includes/text_input_validation.js"></script>
+<script>
+(function () {
+    var titleInput = document.getElementById('notifTitle');
+    var messageInput = document.getElementById('notifMessage');
+    var titleVal = TextInputValidation.bindLimitedTextInput(titleInput, document.getElementById('titleError'), {
+        required: true,
+        counterEl: document.getElementById('titleCharCount')
+    });
+    var messageVal = TextInputValidation.bindLimitedTextInput(messageInput, document.getElementById('messageError'), {
+        required: true,
+        counterEl: document.getElementById('messageCharCount')
+    });
+    document.querySelector('form[method="post"]')?.addEventListener('submit', function (e) {
+        var t = titleVal.validate();
+        var m = messageVal.validate();
+        if (!t.ok || !m.ok) {
+            e.preventDefault();
+        }
+    });
+})();
+</script>
 </body>
 </html>

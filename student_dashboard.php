@@ -373,6 +373,43 @@ if ($stmt) {
             outline-offset: 2px;
         }
 
+        /* Unavailable facility — whole card greyed out */
+        .facility-card-link.facility-unavailable .card-soft {
+            background: #e5e7eb;
+            border-color: #d1d5db;
+            box-shadow: none;
+            opacity: 0.78;
+        }
+        .facility-card-link.facility-unavailable .facility-img {
+            position: relative;
+        }
+        .facility-card-link.facility-unavailable .facility-img::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: rgba(55, 65, 81, 0.35);
+            pointer-events: none;
+        }
+        .facility-card-link.facility-unavailable .facility-img img {
+            filter: grayscale(1) brightness(0.75);
+        }
+        .facility-card-link.facility-unavailable .facility-body h6,
+        .facility-card-link.facility-unavailable .facility-body p {
+            color: #6b7280;
+        }
+        .facility-card-link.facility-unavailable .badge.bg-dark {
+            background: #9ca3af !important;
+        }
+        @media (hover: hover) {
+            .facility-card-link.facility-unavailable:hover .card-soft {
+                transform: none;
+                box-shadow: none;
+            }
+            .facility-card-link.facility-unavailable:hover .facility-img img {
+                transform: none;
+            }
+        }
+
         .facility-body {
             padding: 1rem 1.1rem 1.15rem;
         }
@@ -591,7 +628,7 @@ include __DIR__ . '/includes/student_sidebar.php';
             <?php foreach ($facilities as $f): ?>
             <?php $can_book = !empty($f['bookable']); ?>
             <div class="col-12 col-sm-6 col-lg-4">
-                <a href="<?php echo htmlspecialchars($f['detail_url'], ENT_QUOTES, 'UTF-8'); ?>" class="facility-card-link d-block h-100">
+                <a href="<?php echo htmlspecialchars($f['detail_url'], ENT_QUOTES, 'UTF-8'); ?>" class="facility-card-link d-block h-100<?php echo $can_book ? '' : ' facility-unavailable'; ?>">
                     <div class="card-soft overflow-hidden h-100">
                         <div class="facility-img">
                             <img

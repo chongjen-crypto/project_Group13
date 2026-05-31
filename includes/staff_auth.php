@@ -2,7 +2,9 @@
 /**
  * Staff-only session guard (include at top of staff pages).
  */
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 if (!isset($_SESSION['user_id'], $_SESSION['role']) || $_SESSION['role'] !== 'staff') {
     header('Location: login.php');

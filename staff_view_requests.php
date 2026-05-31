@@ -18,7 +18,7 @@ $status_badges = [
 
 $all_bookings = [];
 $sql = "SELECT b.booking_id AS id, u.full_name AS student, b.facility_type, b.booking_date AS date,
-        b.start_time, b.end_time, b.booking_status,
+        b.start_time, b.end_time, b.booking_status, b.purpose,
         CASE WHEN b.facility_type = 'snooker' THEN 'Snooker Room'
              WHEN b.facility_type = 'gym' THEN 'Gym Room'
              WHEN b.facility_type = 'swimming' THEN 'Swimming Pool'
@@ -69,6 +69,7 @@ if ($res) {
                             <th>Facility</th>
                             <th>Date</th>
                             <th>Time</th>
+                            <th>Purpose</th>
                             <th>Status</th>
                             <th class="pe-4">Action</th>
                         </tr>
@@ -76,7 +77,7 @@ if ($res) {
                     <tbody>
                         <?php if (empty($all_bookings)): ?>
                         <tr>
-                            <td colspan="6" class="text-center py-4 text-muted">No booking requests yet.</td>
+                            <td colspan="7" class="text-center py-4 text-muted">No booking requests yet.</td>
                         </tr>
                         <?php else: ?>
                             <?php foreach ($all_bookings as $b): ?>
@@ -89,6 +90,16 @@ if ($res) {
                                 <td><?php echo htmlspecialchars($b['facility'], ENT_QUOTES, 'UTF-8'); ?></td>
                                 <td><?php echo htmlspecialchars($b['date'], ENT_QUOTES, 'UTF-8'); ?></td>
                                 <td><?php echo htmlspecialchars($b['time'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                <td style="max-width: 180px;">
+                                    <?php
+                                    $purpose = trim((string) ($b['purpose'] ?? ''));
+                                    if ($purpose !== ''):
+                                    ?>
+                                        <span class="small"><?php echo htmlspecialchars($purpose, ENT_QUOTES, 'UTF-8'); ?></span>
+                                    <?php else: ?>
+                                        <span class="text-muted small">—</span>
+                                    <?php endif; ?>
+                                </td>
                                 <td>
                                     <span class="badge rounded-pill <?php echo htmlspecialchars($badge, ENT_QUOTES, 'UTF-8'); ?>">
                                         <?php echo htmlspecialchars(ucfirst($st), ENT_QUOTES, 'UTF-8'); ?>

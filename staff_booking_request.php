@@ -1,9 +1,7 @@
 <?php
 /**
- * Scholar Hub — Staff booking request detail
- * Opened from staff_dashboard.php or admin_booking_requests.php
+ * Scholar Hub — Staff/admin booking request detail
  */
-
 session_start();
 
 if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['staff', 'admin'])) {
@@ -13,16 +11,18 @@ if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['staff', 'admin']
 
 require __DIR__ . '/db.php';
 require_once __DIR__ . '/includes/notification_helpers.php';
+require_once __DIR__ . '/includes/text_input_helpers.php';
 
 $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 $msg = '';
+$error_msg = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $action = $_POST['action'];
     $bookingMeta = null;
     $metaStmt = mysqli_prepare(
         $conn,
-        "SELECT b.user_id, b.facility_type, b.booking_date, b.start_time, b.end_time, u.full_name
+        "SELECT b.user_id, b.facility_type, b.booking_date, b.start_time, b.end_time, b.booking_status, u.full_name
          FROM bookings b
          JOIN users u ON b.user_id = u.id
          WHERE b.booking_id = ? LIMIT 1"
@@ -35,15 +35,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         mysqli_stmt_close($metaStmt);
     }
 
-    if ($action === 'approve') {
-        $sql = "UPDATE bookings SET booking_status = 'approved' WHERE booking_id = ?";
+    if (!is_array($bookingMeta) || ($bookingMeta['booking_status'] ?? '') !== 'pending') {
+        $error_msg = 'This booking is no longer pending and cannot be changed.';
+    } elseif ($action === 'approve') {
+        $sql = "UPDATE bookings SET booking_status = 'approved' WHERE booking_id = ? AND booking_status = 'pending'";
         $stmt = mysqli_prepare($conn, $sql);
         mysqli_stmt_bind_param($stmt, "i", $id);
         mysqli_stmt_execute($stmt);
         $updated = mysqli_stmt_affected_rows($stmt) > 0;
         mysqli_stmt_close($stmt);
-        $msg = 'Booking approved.';
-        if ($updated && is_array($bookingMeta)) {
+        if ($updated) {
+            $msg = 'Booking approved.';
             $facility = notifications_facility_label((string) ($bookingMeta['facility_type'] ?? ''));
             $time = substr((string) ($bookingMeta['start_time'] ?? ''), 0, 5) . ' - ' . substr((string) ($bookingMeta['end_time'] ?? ''), 0, 5);
             notifications_send_to_user(
@@ -52,26 +54,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 'Booking Request Accepted',
                 "Your booking #{$id} for {$facility} on {$bookingMeta['booking_date']} ({$time}) has been accepted."
             );
+        } else {
+            $error_msg = 'Could not approve booking.';
         }
     } elseif ($action === 'reject') {
         $reason = trim($_POST['reject_reason'] ?? '');
-        $sql = "UPDATE bookings SET booking_status = 'rejected', reject_reason = ? WHERE booking_id = ?";
-        $stmt = mysqli_prepare($conn, $sql);
-        mysqli_stmt_bind_param($stmt, "si", $reason, $id);
-        mysqli_stmt_execute($stmt);
-        $updated = mysqli_stmt_affected_rows($stmt) > 0;
-        mysqli_stmt_close($stmt);
-        $msg = 'Booking rejected.';
-        if ($updated && is_array($bookingMeta)) {
-            $facility = notifications_facility_label((string) ($bookingMeta['facility_type'] ?? ''));
-            $time = substr((string) ($bookingMeta['start_time'] ?? ''), 0, 5) . ' - ' . substr((string) ($bookingMeta['end_time'] ?? ''), 0, 5);
-            $rejectNote = $reason !== '' ? " Reason: {$reason}" : '';
-            notifications_send_to_user(
-                $conn,
-                (int) $bookingMeta['user_id'],
-                'Booking Request Rejected',
-                "Your booking #{$id} for {$facility} on {$bookingMeta['booking_date']} ({$time}) was rejected.{$rejectNote}"
-            );
+        $validation = text_input_validate($reason, true);
+        if (!$validation['valid']) {
+            $error_msg = $validation['error'];
+        } else {
+            $sql = "UPDATE bookings SET booking_status = 'rejected', reject_reason = ? WHERE booking_id = ? AND booking_status = 'pending'";
+            $stmt = mysqli_prepare($conn, $sql);
+            mysqli_stmt_bind_param($stmt, "si", $reason, $id);
+            mysqli_stmt_execute($stmt);
+            $updated = mysqli_stmt_affected_rows($stmt) > 0;
+            mysqli_stmt_close($stmt);
+            if ($updated) {
+                $msg = 'Booking rejected.';
+                $facility = notifications_facility_label((string) ($bookingMeta['facility_type'] ?? ''));
+                $time = substr((string) ($bookingMeta['start_time'] ?? ''), 0, 5) . ' - ' . substr((string) ($bookingMeta['end_time'] ?? ''), 0, 5);
+                $rejectNote = $reason !== '' ? " Reason: {$reason}" : '';
+                notifications_send_to_user(
+                    $conn,
+                    (int) $bookingMeta['user_id'],
+                    'Booking Request Rejected',
+                    "Your booking #{$id} for {$facility} on {$bookingMeta['booking_date']} ({$time}) was rejected.{$rejectNote}"
+                );
+            } else {
+                $error_msg = 'Could not reject booking.';
+            }
         }
     }
 }
@@ -100,6 +111,7 @@ if ($id > 0) {
 }
 
 $back_link = $_SESSION['role'] === 'admin' ? 'admin_booking_requests.php' : 'staff_view_requests.php';
+$purpose_text = trim((string) ($row['purpose'] ?? ''));
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -116,12 +128,15 @@ $back_link = $_SESSION['role'] === 'admin' ? 'admin_booking_requests.php' : 'sta
 </head>
 <body class="py-4 py-md-5">
     <div class="container px-3">
-        <a href="<?php echo $back_link; ?>" class="btn btn-outline-dark btn-sm rounded-pill mb-3">
+        <a href="<?php echo htmlspecialchars($back_link, ENT_QUOTES, 'UTF-8'); ?>" class="btn btn-outline-dark btn-sm rounded-pill mb-3">
             <i class="bi bi-arrow-left me-1"></i> Back
         </a>
 
         <?php if ($msg): ?>
-            <div class="alert alert-info"><?php echo htmlspecialchars($msg); ?></div>
+            <div class="alert alert-success"><?php echo htmlspecialchars($msg, ENT_QUOTES, 'UTF-8'); ?></div>
+        <?php endif; ?>
+        <?php if ($error_msg): ?>
+            <div class="alert alert-danger"><?php echo htmlspecialchars($error_msg, ENT_QUOTES, 'UTF-8'); ?></div>
         <?php endif; ?>
 
         <?php if (!$row): ?>
@@ -141,6 +156,8 @@ $back_link = $_SESSION['role'] === 'admin' ? 'admin_booking_requests.php' : 'sta
                         <dd class="col-sm-8"><?php echo htmlspecialchars($row['booking_date'], ENT_QUOTES, 'UTF-8'); ?></dd>
                         <dt class="col-sm-4 text-muted">Time</dt>
                         <dd class="col-sm-8"><?php echo htmlspecialchars(substr($row['start_time'], 0, 5) . ' - ' . substr($row['end_time'], 0, 5), ENT_QUOTES, 'UTF-8'); ?></dd>
+                        <dt class="col-sm-4 text-muted">Purpose</dt>
+                        <dd class="col-sm-8"><?php echo $purpose_text !== '' ? nl2br(htmlspecialchars($purpose_text, ENT_QUOTES, 'UTF-8')) : '<span class="text-muted">Not provided</span>'; ?></dd>
                         <dt class="col-sm-4 text-muted">Status</dt>
                         <dd class="col-sm-8">
                             <span class="badge <?php echo $row['booking_status'] === 'pending' ? 'text-bg-warning' : ($row['booking_status'] === 'approved' ? 'text-bg-success' : 'text-bg-danger'); ?>">
@@ -148,7 +165,7 @@ $back_link = $_SESSION['role'] === 'admin' ? 'admin_booking_requests.php' : 'sta
                             </span>
                         </dd>
                         <?php if ($row['booking_status'] === 'rejected' && !empty($row['reject_reason'])): ?>
-                            <dt class="col-sm-4 text-muted mt-2">Reject Reason</dt>
+                            <dt class="col-sm-4 text-muted mt-2">Reject remarks</dt>
                             <dd class="col-sm-8 mt-2 text-danger"><?php echo htmlspecialchars($row['reject_reason'], ENT_QUOTES, 'UTF-8'); ?></dd>
                         <?php endif; ?>
                     </dl>
@@ -160,8 +177,10 @@ $back_link = $_SESSION['role'] === 'admin' ? 'admin_booking_requests.php' : 'sta
                         <input type="hidden" name="action" id="formAction" value="">
                         
                         <div id="rejectReasonDiv" class="mb-3 d-none">
-                            <label for="rejectReason" class="form-label small fw-semibold">Reason for rejection (required)</label>
-                            <textarea name="reject_reason" id="rejectReason" class="form-control" rows="3"></textarea>
+                            <label for="rejectReason" class="form-label small fw-semibold">Remarks for rejection (required)</label>
+                            <textarea name="reject_reason" id="rejectReason" class="form-control" rows="3" maxlength="500"></textarea>
+                            <div class="form-text"><span id="rejectCharCount">0 / <?php echo TEXT_INPUT_MAX_CHARS; ?> characters</span></div>
+                            <div id="rejectReasonError" class="text-danger small mt-1 d-none"></div>
                         </div>
 
                         <div class="d-flex flex-wrap gap-2" id="actionButtons">
@@ -187,7 +206,10 @@ $back_link = $_SESSION['role'] === 'admin' ? 'admin_booking_requests.php' : 'sta
         <?php endif; ?>
     </div>
     
+    <script src="includes/text_input_validation.js"></script>
     <script>
+    var rejectValidator = null;
+
     function submitApprove() {
         document.getElementById('formAction').value = 'approve';
         document.getElementById('approvalForm').submit();
@@ -196,16 +218,32 @@ $back_link = $_SESSION['role'] === 'admin' ? 'admin_booking_requests.php' : 'sta
         document.getElementById('rejectReasonDiv').classList.remove('d-none');
         document.getElementById('actionButtons').classList.add('d-none');
         document.getElementById('confirmRejectButtons').classList.remove('d-none');
+        if (!rejectValidator) {
+            rejectValidator = TextInputValidation.bindLimitedTextInput(
+                document.getElementById('rejectReason'),
+                document.getElementById('rejectReasonError'),
+                { required: true, counterEl: document.getElementById('rejectCharCount') }
+            );
+        }
     }
     function cancelReject() {
         document.getElementById('rejectReasonDiv').classList.add('d-none');
         document.getElementById('actionButtons').classList.remove('d-none');
         document.getElementById('confirmRejectButtons').classList.add('d-none');
         document.getElementById('rejectReason').value = '';
+        TextInputValidation.showFieldError(document.getElementById('rejectReason'), document.getElementById('rejectReasonError'), '');
+        if (rejectValidator) rejectValidator.validate();
     }
     function submitReject() {
-        if (document.getElementById('rejectReason').value.trim() === '') {
-            alert('Please provide a reason for rejection.');
+        if (!rejectValidator) {
+            rejectValidator = TextInputValidation.bindLimitedTextInput(
+                document.getElementById('rejectReason'),
+                document.getElementById('rejectReasonError'),
+                { required: true, counterEl: document.getElementById('rejectCharCount') }
+            );
+        }
+        var result = rejectValidator.validate();
+        if (!result.ok) {
             return;
         }
         document.getElementById('formAction').value = 'reject';
