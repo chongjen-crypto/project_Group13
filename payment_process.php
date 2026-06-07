@@ -17,6 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 require __DIR__ . '/db.php';
 require_once __DIR__ . '/includes/booking_helpers.php';
 require_once __DIR__ . '/includes/payment_checkout.php';
+require_once __DIR__ . '/includes/wallet_helpers.php';
 
 $checkout = payment_checkout_load();
 if ($checkout === null) {
@@ -51,6 +52,16 @@ if (!is_array($starts) || $starts === []) {
 }
 
 $user_id = (int) $_SESSION['user_id'];
+$total_amount = (float) ($checkout['total_amount'] ?? 0);
+
+if ($payment_method === 'in_app') {
+    $balance = wallet_get_balance($conn, $user_id);
+    if ($balance < $total_amount) {
+        $_SESSION['payment_error'] = 'Insufficient wallet balance. Please top up in Wallet.';
+        header('Location: payment.php');
+        exit();
+    }
+}
 
 $result = booking_create_reservations_with_payment(
     $conn,
@@ -66,6 +77,21 @@ $result = booking_create_reservations_with_payment(
 );
 
 if ($result['success']) {
+    if ($payment_method === 'in_app') {
+        $firstBookingId = (int) ($result['booking_ids'][0] ?? 0);
+        $deduct = wallet_deduct_for_booking(
+            $conn,
+            $user_id,
+            (float) ($result['total_paid'] ?? $total_amount),
+            $firstBookingId,
+            'Booking payment #' . $firstBookingId
+        );
+        if (!$deduct['success']) {
+            $_SESSION['payment_error'] = $deduct['message'];
+            header('Location: payment.php');
+            exit();
+        }
+    }
     payment_checkout_clear();
     header('Location: student_dashboard.php?booked=1&paid=1');
     exit();

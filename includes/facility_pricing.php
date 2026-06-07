@@ -90,9 +90,9 @@ function facility_pricing_format_rm(float $amount): string
  *   breakdown: string
  * }
  */
-function facility_pricing_calculate(string $facility_type, int $hours): array
+function facility_pricing_calculate(string $facility_type, int $hours, ?mysqli $conn = null): array
 {
-    $pricing = facility_pricing_get($facility_type);
+    $pricing = facility_pricing_get($facility_type, $conn);
     if ($pricing === null) {
         return [
             'unit_price'  => 0.0,
@@ -128,9 +128,9 @@ function facility_pricing_calculate(string $facility_type, int $hours): array
 /**
  * Payment amount to store on a single booking row (for multi-row inserts).
  */
-function facility_pricing_row_amount(string $facility_type, int $hours, int $row_index, int $total_rows): float
+function facility_pricing_row_amount(string $facility_type, int $hours, int $row_index, int $total_rows, ?mysqli $conn = null): float
 {
-    $calc = facility_pricing_calculate($facility_type, $hours);
+    $calc = facility_pricing_calculate($facility_type, $hours, $conn);
     if ($calc['mode'] === 'entry') {
         return $row_index === 0 ? $calc['total'] : 0.0;
     }

@@ -162,7 +162,7 @@ if ($action === 'prepare_checkout' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $hours = count($starts);
-    $calc = facility_pricing_calculate($facility_type, $hours);
+    $calc = facility_pricing_calculate($facility_type, $hours, $conn);
 
     payment_checkout_save([
         'user_id'        => (int) $_SESSION['user_id'],

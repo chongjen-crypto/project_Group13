@@ -181,8 +181,8 @@ function stats_wallet_overview(mysqli $conn): array
             $type = $row['payment_status'] === 'paid' ? 'Booking Payment' : ucfirst((string) $row['payment_status']);
             if ($method === 'in_app') {
                 $type = 'Wallet Payment';
-            } elseif ($method === 'tng') {
-                $type = 'TNG Payment';
+            } elseif ($method === 'online' || $method === 'tng') {
+                $type = 'Online Payment';
             }
             $transactions[] = [
                 'id' => 'BK-' . (int) $row['booking_id'],

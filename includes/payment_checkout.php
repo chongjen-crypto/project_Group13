@@ -46,12 +46,24 @@ function payment_checkout_clear(): void
 function payment_method_options(): array
 {
     return [
-        'tng'    => ['label' => "Touch 'n Go eWallet", 'icon' => 'bi-phone', 'short' => 'TNG'],
-        'in_app' => ['label' => 'In-App Money', 'icon' => 'bi-wallet2', 'short' => 'Wallet'],
+        'online' => ['label' => 'Online Payment', 'icon' => 'bi-globe2', 'short' => 'ToyyibPay', 'hint' => 'Pay securely via ToyyibPay'],
+        'in_app' => ['label' => 'In-App Money', 'icon' => 'bi-wallet2', 'short' => 'Wallet', 'hint' => 'Scholar Hub wallet balance'],
     ];
 }
 
 function payment_method_is_valid(string $method): bool
 {
     return isset(payment_method_options()[$method]);
+}
+
+function payment_method_display_label(string $method): string
+{
+    $options = payment_method_options();
+    if (isset($options[$method])) {
+        return (string) $options[$method]['label'];
+    }
+    if ($method === 'tng') {
+        return 'Online Payment';
+    }
+    return ucfirst(str_replace('_', ' ', $method));
 }

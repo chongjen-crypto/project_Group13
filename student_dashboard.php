@@ -600,7 +600,7 @@ include __DIR__ . '/includes/student_sidebar.php';
                 </a>
             </div>
             <div class="col-6 col-md-3">
-                <a href="payment.php" class="card-soft quick-action-card">
+                <a href="student_wallet.php" class="card-soft quick-action-card">
                     <div class="icon-wrap" style="background: linear-gradient(135deg,#059669,#10b981);">
                         <i class="bi bi-wallet2"></i>
                     </div>

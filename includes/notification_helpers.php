@@ -139,6 +139,55 @@ function notifications_facility_label(string $facility_type): string
 }
 
 /**
+ * Notify staff and admin when a student submits a new booking.
+ *
+ * @param list<string> $start_times
+ * @param list<int> $booking_ids
+ */
+function notifications_send_new_booking_alert(
+    mysqli $conn,
+    int $student_user_id,
+    string $facility_type,
+    string $booking_date,
+    array $start_times,
+    array $booking_ids,
+    string $purpose = ''
+): void {
+    if ($booking_ids === []) {
+        return;
+    }
+
+    $studentName = 'A student';
+    $stmt = mysqli_prepare($conn, 'SELECT full_name FROM users WHERE id = ? LIMIT 1');
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'i', $student_user_id);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        if ($res && ($row = mysqli_fetch_assoc($res)) && trim((string) ($row['full_name'] ?? '')) !== '') {
+            $studentName = trim((string) $row['full_name']);
+        }
+        mysqli_stmt_close($stmt);
+    }
+
+    $facility = notifications_facility_label($facility_type);
+    $starts = array_values($start_times);
+    sort($starts);
+    $timeStart = substr((string) ($starts[0] ?? '00:00:00'), 0, 5);
+    $lastStart = (string) ($starts[count($starts) - 1] ?? '00:00:00');
+    $timeEnd = sprintf('%02d:00', (int) substr($lastStart, 0, 2) + 1);
+    $time = $timeStart . ' - ' . $timeEnd;
+
+    $bookingId = (int) $booking_ids[0];
+    $message = "{$studentName} submitted a new booking request #{$bookingId} for {$facility} on {$booking_date} ({$time}).";
+    $purpose = trim($purpose);
+    if ($purpose !== '') {
+        $message .= " Purpose: {$purpose}";
+    }
+
+    notifications_send_to_roles($conn, ['staff', 'admin'], 'New Booking Request', $message);
+}
+
+/**
  * @return list<array<string, mixed>>
  */
 function notifications_fetch_for_user(mysqli $conn, int $user_id, int $limit = 30): array

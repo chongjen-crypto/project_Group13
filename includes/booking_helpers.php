@@ -423,6 +423,17 @@ function booking_create_reservations(
         mysqli_stmt_close($stmt);
         mysqli_commit($conn);
 
+        require_once __DIR__ . '/notification_helpers.php';
+        notifications_send_new_booking_alert(
+            $conn,
+            $user_id,
+            $facility_type,
+            $booking_date,
+            $starts,
+            $ids,
+            $purpose
+        );
+
         $count = count($ids);
         $msg = $count === 1
             ? 'Your 1-hour booking was submitted and is pending approval.'
@@ -506,7 +517,7 @@ function booking_create_reservations_with_payment(
 
     $starts = array_values(array_unique(array_map('strval', $start_times)));
     $hours = count($starts);
-    $calc = facility_pricing_calculate($facility_type, $hours);
+    $calc = facility_pricing_calculate($facility_type, $hours, $conn);
     $total_paid = (float) $calc['total'];
 
     if (!booking_validate_date($booking_date)) {
@@ -560,7 +571,7 @@ function booking_create_reservations_with_payment(
                 ];
             }
 
-            $rowAmount = facility_pricing_row_amount($facility_type, $hours, $rowIndex, $totalRows);
+            $rowAmount = facility_pricing_row_amount($facility_type, $hours, $rowIndex, $totalRows, $conn);
             $rowIndex++;
 
             if ($court_id === null) {
@@ -604,6 +615,17 @@ function booking_create_reservations_with_payment(
 
         mysqli_stmt_close($stmt);
         mysqli_commit($conn);
+
+        require_once __DIR__ . '/notification_helpers.php';
+        notifications_send_new_booking_alert(
+            $conn,
+            $user_id,
+            $facility_type,
+            $booking_date,
+            $starts,
+            $ids,
+            $purpose
+        );
 
         return [
             'success'     => true,

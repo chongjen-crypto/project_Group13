@@ -21,7 +21,7 @@ if (!isset($student_nav_active)) {
         <a href="booking_history.php" class="nav-link-sidebar <?php echo $student_nav_active === 'history' ? 'active' : ''; ?>">
             <i class="bi bi-clock-history"></i> Booking History
         </a>
-        <a href="payment.php" class="nav-link-sidebar <?php echo $student_nav_active === 'wallet' ? 'active' : ''; ?>">
+        <a href="student_wallet.php" class="nav-link-sidebar <?php echo $student_nav_active === 'wallet' ? 'active' : ''; ?>">
             <i class="bi bi-wallet2"></i> Wallet
         </a>
         <a href="student_notifications.php" class="nav-link-sidebar <?php echo $student_nav_active === 'notifications' ? 'active' : ''; ?>">
