@@ -63,6 +63,38 @@ if ($payment_method === 'in_app') {
     }
 }
 
+// Online (ToyyibPay): save booking as payment pending, then redirect to create_bill.php
+if ($payment_method === 'online') {
+    $result = booking_create_reservations_with_payment(
+        $conn,
+        $user_id,
+        $facility_type,
+        $booking_date,
+        $court_id,
+        $starts,
+        $purpose,
+        'online',
+        'pending',
+        'pending'
+    );
+
+    if ($result['success']) {
+        $firstBookingId = (int) ($result['booking_ids'][0] ?? 0);
+        $_SESSION['toyyibpay_payment_group'] = [
+            'booking_ids' => $result['booking_ids'],
+            'primary_booking_id' => $firstBookingId,
+            'total_amount' => (float) ($result['total_paid'] ?? $total_amount),
+        ];
+        payment_checkout_clear();
+        header('Location: create_bill.php?booking_id=' . $firstBookingId);
+        exit();
+    }
+
+    $_SESSION['payment_error'] = $result['message'];
+    header('Location: payment.php');
+    exit();
+}
+
 $result = booking_create_reservations_with_payment(
     $conn,
     $user_id,

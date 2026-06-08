@@ -162,13 +162,14 @@ if ($stmt) {
                             <th>Time</th>
                             <th>Status</th>
                             <th>Remarks</th>
+                            <th>Payment</th>
                             <th class="pe-4 text-end">Action</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php if (empty($bookings)): ?>
                         <tr>
-                            <td colspan="7" class="text-center py-4 text-muted">You have no bookings yet.</td>
+                            <td colspan="8" class="text-center py-4 text-muted">You have no bookings yet.</td>
                         </tr>
                         <?php else: ?>
                             <?php foreach ($bookings as $b): 
@@ -199,14 +200,34 @@ if ($stmt) {
                                         <span class="text-muted small">—</span>
                                     <?php endif; ?>
                                 </td>
+                                <td>
+                                    <?php
+                                    $payStatus = strtolower((string) ($b['payment_status'] ?? 'pending'));
+                                    $payBadge = 'text-bg-warning';
+                                    $payLabel = 'Pending';
+                                    if ($payStatus === 'paid') {
+                                        $payBadge = 'text-bg-success';
+                                        $payLabel = 'Paid';
+                                    } elseif ($payStatus === 'failed') {
+                                        $payBadge = 'text-bg-danger';
+                                        $payLabel = 'Failed';
+                                    }
+                                    ?>
+                                    <span class="badge rounded-pill <?php echo $payBadge; ?>"><?php echo $payLabel; ?></span>
+                                </td>
                                 <td class="pe-4 text-end">
+                                    <?php if (in_array($payStatus, ['pending', 'failed'], true) && !in_array($b['booking_status'], ['cancelled', 'rejected'], true)): ?>
+                                    <a href="create_bill.php?booking_id=<?php echo (int) $b['booking_id']; ?>" class="btn btn-sm btn-success rounded-pill me-1">
+                                        <i class="bi bi-credit-card me-1"></i>Pay Now
+                                    </a>
+                                    <?php endif; ?>
                                     <?php if (in_array($b['booking_status'], ['pending', 'approved'])): ?>
                                     <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to cancel this booking?');">
                                         <input type="hidden" name="action" value="cancel_booking">
                                         <input type="hidden" name="booking_id" value="<?php echo htmlspecialchars($b['booking_id']); ?>">
                                         <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill">Cancel</button>
                                     </form>
-                                    <?php else: ?>
+                                    <?php elseif (!in_array($payStatus, ['pending', 'failed'], true) || in_array($b['booking_status'], ['cancelled', 'rejected'], true)): ?>
                                     <span class="text-muted small">—</span>
                                     <?php endif; ?>
                                 </td>
