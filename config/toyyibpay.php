@@ -2,19 +2,49 @@
 /**
  * Scholar Hub — ToyyibPay configuration and reusable API helpers.
  *
- * Secret key: TOYYIBPAY_SECRET_KEY (environment variable only — never hardcode).
- * Category code: stored in this config file (non-secret merchant setting).
+ * Credentials: config/toyyibpay_local.php (copy from toyyibpay_local.example.php)
+ * or environment variables TOYYIBPAY_SECRET_KEY / TOYYIBPAY_SANDBOX.
+ *
+ * Category code: Facility Booking System
  */
 declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/includes/env_loader.php';
 scholarhub_load_env_file();
 
-/** Category code from your ToyyibPay merchant dashboard. */
-const TOYYIBPAY_CATEGORY_CODE = 'YOUR_CATEGORY_CODE';
+$localConfig = __DIR__ . '/toyyibpay_local.php';
+if (is_readable($localConfig)) {
+    require_once $localConfig;
+}
 
-/** Sandbox (dev.toyyibpay.com) when true; production when false. */
-const TOYYIBPAY_USE_SANDBOX = true;
+/** Category code from ToyyibPay merchant dashboard. */
+const TOYYIBPAY_CATEGORY_CODE = 'pxf2xhg2';
+
+/** Default sandbox flag when not set in local config or .env */
+const TOYYIBPAY_USE_SANDBOX_DEFAULT = true;
+
+/** Resolve public base URL for return/callback (project root on web server). */
+function toyyibpay_app_base_url(): string
+{
+    if (defined('TOYYIBPAY_APP_BASE_URL') && TOYYIBPAY_APP_BASE_URL !== '') {
+        return rtrim((string) TOYYIBPAY_APP_BASE_URL, '/');
+    }
+
+    $host = isset($_SERVER['HTTP_HOST']) ? (string) $_SERVER['HTTP_HOST'] : 'localhost';
+    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+
+    $projectDir = realpath(dirname(__DIR__)) ?: dirname(__DIR__);
+    $docRoot = realpath($_SERVER['DOCUMENT_ROOT'] ?? '') ?: '';
+
+    if ($docRoot !== '' && str_starts_with(str_replace('\\', '/', $projectDir), str_replace('\\', '/', $docRoot))) {
+        $webPath = substr(str_replace('\\', '/', $projectDir), strlen(str_replace('\\', '/', $docRoot)));
+        $webPath = '/' . trim($webPath, '/');
+    } else {
+        $webPath = '/project_Group13';
+    }
+
+    return rtrim($scheme . '://' . $host . $webPath, '/');
+}
 
 /**
  * @return array{
@@ -29,20 +59,23 @@ const TOYYIBPAY_USE_SANDBOX = true;
  */
 function toyyibpay_config(): array
 {
-    $secret = trim((string) (getenv('TOYYIBPAY_SECRET_KEY') ?: ''));
-    $sandbox = TOYYIBPAY_USE_SANDBOX
-        || filter_var(getenv('TOYYIBPAY_SANDBOX') ?: 'false', FILTER_VALIDATE_BOOLEAN);
+    $secret = '';
+    if (defined('TOYYIBPAY_SECRET_KEY')) {
+        $secret = trim((string) TOYYIBPAY_SECRET_KEY);
+    }
+    if ($secret === '') {
+        $secret = trim((string) (getenv('TOYYIBPAY_SECRET_KEY') ?: ''));
+    }
 
-    $host = isset($_SERVER['HTTP_HOST']) ? (string) $_SERVER['HTTP_HOST'] : 'localhost';
-    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-    $basePath = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/');
-    if ($basePath === '' || $basePath === '/' || $basePath === '.') {
-        $appBase = $scheme . '://' . $host;
-    } else {
-        $appBase = $scheme . '://' . $host . $basePath;
+    $sandbox = TOYYIBPAY_USE_SANDBOX_DEFAULT;
+    if (defined('TOYYIBPAY_USE_SANDBOX')) {
+        $sandbox = (bool) TOYYIBPAY_USE_SANDBOX;
+    } elseif (getenv('TOYYIBPAY_SANDBOX') !== false) {
+        $sandbox = filter_var(getenv('TOYYIBPAY_SANDBOX'), FILTER_VALIDATE_BOOLEAN);
     }
 
     $apiHost = $sandbox ? 'https://dev.toyyibpay.com' : 'https://toyyibpay.com';
+    $appBase = toyyibpay_app_base_url();
 
     return [
         'secret_key'    => $secret,
@@ -53,6 +86,13 @@ function toyyibpay_config(): array
         'callback_url'  => $appBase . '/payment_callback.php',
         'sandbox'       => $sandbox,
     ];
+}
+
+/** Whether secret key and category are ready for createBill. */
+function toyyibpay_is_configured(): bool
+{
+    $c = toyyibpay_config();
+    return $c['secret_key'] !== '' && $c['category_code'] !== '';
 }
 
 /** Append a line to logs/toyyibpay.log (or PHP error_log on failure). */
@@ -242,9 +282,9 @@ function toyyibpay_create_bill_api(array $payload): array
 {
     $config = toyyibpay_config();
     if ($config['secret_key'] === '') {
-        return ['success' => false, 'bill_code' => '', 'message' => 'ToyyibPay secret key is not configured.', 'raw' => null];
+        return ['success' => false, 'bill_code' => '', 'message' => 'ToyyibPay secret key is not configured. Copy config/toyyibpay_local.example.php to config/toyyibpay_local.php', 'raw' => null];
     }
-    if ($config['category_code'] === '' || $config['category_code'] === 'YOUR_CATEGORY_CODE') {
+    if ($config['category_code'] === '') {
         return ['success' => false, 'bill_code' => '', 'message' => 'ToyyibPay category code is not configured.', 'raw' => null];
     }
 
@@ -263,6 +303,7 @@ function toyyibpay_create_bill_api(array $payload): array
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 30,
         CURLOPT_HTTPHEADER => ['Content-Type: application/x-www-form-urlencoded'],
+        CURLOPT_SSL_VERIFYPEER => true,
     ]);
 
     $response = curl_exec($ch);
@@ -272,7 +313,7 @@ function toyyibpay_create_bill_api(array $payload): array
 
     if ($response === false) {
         toyyibpay_log('createBill curl error', ['error' => $curlError]);
-        return ['success' => false, 'bill_code' => '', 'message' => 'Payment gateway unreachable.', 'raw' => null];
+        return ['success' => false, 'bill_code' => '', 'message' => 'Payment gateway unreachable. Enable PHP curl extension.', 'raw' => null];
     }
 
     $decoded = json_decode($response, true);
@@ -288,7 +329,12 @@ function toyyibpay_create_bill_api(array $payload): array
     }
 
     if ($billCode === '') {
-        $msg = is_array($decoded) && isset($decoded[0]['msg']) ? (string) $decoded[0]['msg'] : 'ToyyibPay did not return a bill code.';
+        $msg = 'ToyyibPay did not return a bill code.';
+        if (is_array($decoded) && isset($decoded[0]['msg'])) {
+            $msg = (string) $decoded[0]['msg'];
+        } elseif (is_array($decoded) && isset($decoded['msg'])) {
+            $msg = (string) $decoded['msg'];
+        }
         return ['success' => false, 'bill_code' => '', 'message' => $msg, 'raw' => $decoded];
     }
 

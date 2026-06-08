@@ -1,2 +1,8 @@
 # Local SMTP secrets (copy from includes/mail_local.example.php)
 includes/mail_local.php
+
+# Local ToyyibPay credentials (copy from config/toyyibpay_local.example.php)
+config/toyyibpay_local.php
+
+# Environment overrides
+.env

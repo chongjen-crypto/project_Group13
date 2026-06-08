@@ -2,3 +2,5 @@
 [2026-06-08 17:04:04] create_bill failed {"booking_id":14,"message":"ToyyibPay secret key is not configured."}
 [2026-06-08 17:04:09] create_bill failed {"booking_id":14,"message":"ToyyibPay secret key is not configured."}
 [2026-06-08 17:04:10] create_bill failed {"booking_id":14,"message":"ToyyibPay secret key is not configured."}
+[2026-06-08 17:18:06] createBill response {"http":200,"body":"\t\t\t\t\t\t\n\t\t[{\"BillCode\":\"vzze4qu3\"}]"}
+[2026-06-08 17:18:06] Bill created, redirecting {"booking_id":17,"bill_code":"vzze4qu3","amount":9.1}

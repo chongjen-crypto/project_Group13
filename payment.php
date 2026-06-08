@@ -350,7 +350,7 @@ if ($dt) {
                         </div>
 
                         <button type="submit" class="btn-pay" id="btnPay">
-                            Pay <?php echo htmlspecialchars(facility_pricing_format_rm($total_amount), ENT_QUOTES, 'UTF-8'); ?>
+                            <span id="btnPayLabel">Continue to ToyyibPay — <?php echo htmlspecialchars(facility_pricing_format_rm($total_amount), ENT_QUOTES, 'UTF-8'); ?></span>
                         </button>
                     </div>
                 </div>
@@ -400,6 +400,17 @@ if ($dt) {
     var input = document.getElementById('paymentMethodInput');
     var form = document.getElementById('paymentForm');
     var btnPay = document.getElementById('btnPay');
+    var btnPayLabel = document.getElementById('btnPayLabel');
+    var totalFormatted = <?php echo json_encode(facility_pricing_format_rm($total_amount)); ?>;
+
+    function updatePayButtonLabel() {
+        if (!btnPayLabel) return;
+        if (input.value === 'online') {
+            btnPayLabel.textContent = 'Continue to ToyyibPay — ' + totalFormatted;
+        } else {
+            btnPayLabel.textContent = 'Pay ' + totalFormatted + ' from Wallet';
+        }
+    }
 
     methods.forEach(function (el) {
         el.addEventListener('click', function (e) {
@@ -417,13 +428,18 @@ if ($dt) {
             if (activeIcon) {
                 activeIcon.className = 'bi bi-check-circle-fill check-icon fs-5';
             }
+            updatePayButtonLabel();
         });
     });
+
+    updatePayButtonLabel();
 
     if (form) {
         form.addEventListener('submit', function () {
             btnPay.disabled = true;
-            btnPay.textContent = 'Processing…';
+            if (btnPayLabel) {
+                btnPayLabel.textContent = 'Processing…';
+            }
         });
     }
 })();

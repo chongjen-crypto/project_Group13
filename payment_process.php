@@ -18,6 +18,7 @@ require __DIR__ . '/db.php';
 require_once __DIR__ . '/includes/booking_helpers.php';
 require_once __DIR__ . '/includes/payment_checkout.php';
 require_once __DIR__ . '/includes/wallet_helpers.php';
+require_once __DIR__ . '/config/toyyibpay.php';
 
 $checkout = payment_checkout_load();
 if ($checkout === null) {
@@ -65,6 +66,12 @@ if ($payment_method === 'in_app') {
 
 // Online (ToyyibPay): save booking as payment pending, then redirect to create_bill.php
 if ($payment_method === 'online') {
+    if (!toyyibpay_is_configured()) {
+        $_SESSION['payment_error'] = 'Online payment is not configured. Copy config/toyyibpay_local.example.php to config/toyyibpay_local.php and add your ToyyibPay secret key.';
+        header('Location: payment.php');
+        exit();
+    }
+
     $result = booking_create_reservations_with_payment(
         $conn,
         $user_id,

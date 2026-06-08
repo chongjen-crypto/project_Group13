@@ -36,6 +36,13 @@ if ($status !== '' && $order_id !== '' && $refno !== '' && $hash !== '') {
     $hashValid = toyyibpay_verify_callback_hash($status, $order_id, $refno, $hash);
 }
 
+// On localhost the server callback often cannot reach XAMPP; sync status from return URL when hash is valid.
+if ($hashValid && $billcode !== '' && in_array($status, ['1', '3'], true)) {
+    $mappedStatus = toyyibpay_map_payment_status($status);
+    $transactionId = $refno !== '' ? $refno : ('return-' . $order_id);
+    toyyibpay_apply_payment_update($conn, $billcode, $mappedStatus, $transactionId);
+}
+
 $isSuccess = ($status === '1');
 $isFailed = ($status === '3');
 $isPending = ($status === '2' || $status === '');
