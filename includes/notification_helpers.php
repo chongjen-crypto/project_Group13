@@ -50,6 +50,31 @@ function notifications_send_to_all_students(mysqli $conn, string $title, string 
     ];
 }
 
+/** Notify all students when a facility becomes unavailable or available again. */
+function notifications_facility_status_changed(
+    mysqli $conn,
+    string $previousDbStatus,
+    string $newUiStatus,
+    string $facilityName
+): void {
+    $wasActive = $previousDbStatus === 'active';
+    $name = trim($facilityName) !== '' ? trim($facilityName) : 'This facility';
+
+    if ($wasActive && $newUiStatus === 'unavailable') {
+        notifications_send_to_all_students(
+            $conn,
+            'Facility Unavailable',
+            $name . ' is now unavailable for booking. Please choose another facility.'
+        );
+    } elseif (!$wasActive && $newUiStatus === 'available') {
+        notifications_send_to_all_students(
+            $conn,
+            'Facility Available',
+            $name . ' is now available for booking.'
+        );
+    }
+}
+
 /**
  * @return array{success: bool, message: string}
  */

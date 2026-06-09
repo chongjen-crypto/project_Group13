@@ -95,19 +95,9 @@ $overview_stats = stats_admin_overview($conn);
                         <i class="bi bi-send me-1"></i> Send Notification
                     </a>
                     <a href="view_sent_notifications.php" class="btn btn-outline-dark rounded-pill px-4">
-                        <i class="bi bi-bell me-1"></i> View Sent
+                        <i class="bi bi-bell me-1"></i> View Notifications
                     </a>
                 </div>
-            </div>
-        </section>
-
-        <!-- ========================= System settings placeholder ========================= -->
-        <section id="system-settings" class="mb-4">
-            <h2 class="section-title"><i class="bi bi-gear-fill text-dark"></i> System Settings</h2>
-            <div class="settings-placeholder">
-                <i class="bi bi-sliders fs-1 text-secondary mb-3 d-block"></i>
-                <p class="mb-0 fw-semibold text-dark">Configuration panel</p>
-                <p class="small mb-0 mt-2">SMTP, booking rules, and maintenance windows can be configured here later.</p>
             </div>
         </section>
 

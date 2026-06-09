@@ -22,7 +22,7 @@ if (!isset($staff_nav_active)) {
             <i class="bi bi-send"></i> Send Notification
         </a>
         <a href="view_sent_notifications.php" class="nav-link-sidebar <?php echo $staff_nav_active === 'notify_view' ? 'active' : ''; ?>">
-            <i class="bi bi-bell"></i> View Sent Notifications
+            <i class="bi bi-bell"></i> View Notifications
         </a>
     </nav>
     <div class="sidebar-footer">

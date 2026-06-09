@@ -38,9 +38,16 @@ if ($status !== '' && $order_id !== '' && $refno !== '' && $hash !== '') {
 
 // On localhost the server callback often cannot reach XAMPP; sync status from return URL when hash is valid.
 if ($hashValid && $billcode !== '' && in_array($status, ['1', '3'], true)) {
-    $mappedStatus = toyyibpay_map_payment_status($status);
-    $transactionId = $refno !== '' ? $refno : ('return-' . $order_id);
-    toyyibpay_apply_payment_update($conn, $billcode, $mappedStatus, $transactionId);
+    require_once __DIR__ . '/includes/wallet_helpers.php';
+    if (wallet_topup_fetch_by_bill_code($conn, $billcode) !== null) {
+        $mappedStatus = toyyibpay_map_payment_status($status);
+        $transactionId = $refno !== '' ? $refno : ('return-' . $order_id);
+        wallet_topup_apply_payment($conn, $billcode, $mappedStatus, $transactionId);
+    } else {
+        $mappedStatus = toyyibpay_map_payment_status($status);
+        $transactionId = $refno !== '' ? $refno : ('return-' . $order_id);
+        toyyibpay_apply_payment_update($conn, $billcode, $mappedStatus, $transactionId);
+    }
 }
 
 $isSuccess = ($status === '1');

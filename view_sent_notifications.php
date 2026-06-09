@@ -14,11 +14,11 @@ $role = $_SESSION['role'];
 if ($role === 'staff') {
     require_once __DIR__ . '/includes/staff_auth.php';
     $staff_nav_active = 'notify_view';
-    $staff_page_title = 'Sent Notifications';
+    $staff_page_title = 'View Notifications';
 } else {
     require_once __DIR__ . '/includes/admin_auth.php';
     $admin_nav_active = 'notify_view';
-    $admin_page_title = 'Sent Notifications';
+    $admin_page_title = 'View Notifications';
 }
 
 require_once __DIR__ . '/db.php';
@@ -57,7 +57,7 @@ $send_href = 'send_notification.php';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Sent Notifications — Scholar Hub</title>
+    <title>View Notifications — Scholar Hub</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <?php include __DIR__ . '/includes/admin_styles.php'; ?>
@@ -83,7 +83,7 @@ if ($role === 'admin') {
 
     <main class="content-area">
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-            <h2 class="section-title mb-0"><i class="bi bi-bell text-primary"></i> Sent Notifications</h2>
+            <h2 class="section-title mb-0"><i class="bi bi-bell text-primary"></i> View Notifications</h2>
             <a href="<?php echo htmlspecialchars($send_href, ENT_QUOTES, 'UTF-8'); ?>" class="btn btn-dark btn-sm rounded-pill px-3">
                 <i class="bi bi-send me-1"></i> Send new
             </a>

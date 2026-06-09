@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/db.php';
 require_once __DIR__ . '/config/toyyibpay.php';
+require_once __DIR__ . '/includes/wallet_helpers.php';
 
 // -------------------------------------------------------------------------
 // Section 1 — Read callback parameters (POST)
@@ -67,6 +68,25 @@ if ($paymentStatus === 'pending') {
     toyyibpay_log('Callback pending', ['billcode' => $billcode, 'reason' => $reason]);
     http_response_code(200);
     echo 'OK: Payment pending.';
+    exit();
+}
+
+// Wallet top-up (order ref WT-{id})
+if (wallet_topup_parse_order_ref($order_id) !== null) {
+    $walletUpdate = wallet_topup_apply_payment($conn, $billcode, $paymentStatus, $transaction_id, $paidAt);
+    if (!$walletUpdate['success']) {
+        toyyibpay_log('Wallet top-up callback failed', ['billcode' => $billcode, 'message' => $walletUpdate['message']]);
+        http_response_code(500);
+        echo 'FAIL: ' . $walletUpdate['message'];
+        exit();
+    }
+    toyyibpay_log('Wallet top-up callback processed', [
+        'billcode' => $billcode,
+        'topup_id' => $walletUpdate['topup_id'],
+        'payment_status' => $paymentStatus,
+    ]);
+    http_response_code(200);
+    echo 'OK: Wallet top-up ' . $paymentStatus . '.';
     exit();
 }
 

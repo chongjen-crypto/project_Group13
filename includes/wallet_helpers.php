@@ -29,6 +29,21 @@ function wallet_ensure_schema(mysqli $conn): void
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
     mysqli_query($conn, $sql);
 
+    $topupsSql = "CREATE TABLE IF NOT EXISTS wallet_topups (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        amount DECIMAL(10,2) NOT NULL,
+        payment_status ENUM('pending','paid','failed') NOT NULL DEFAULT 'pending',
+        bill_code VARCHAR(100) DEFAULT NULL,
+        transaction_id VARCHAR(100) DEFAULT NULL,
+        paid_at DATETIME DEFAULT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_wallet_topups_user (user_id, created_at),
+        INDEX idx_wallet_topups_bill (bill_code),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
+    mysqli_query($conn, $topupsSql);
+
     $done = true;
 }
 
@@ -82,30 +97,160 @@ function wallet_format_rm(float $amount): string
     return 'RM ' . number_format($amount, 2);
 }
 
-/** Top-up will redirect to ToyyibPay once integrated. */
+/** Preset top-up amounts shown on student wallet page. */
+function wallet_topup_preset_amounts(): array
+{
+    return [1.0, 5.0, 10.0, 20.0];
+}
+
+/** Whether online top-up via ToyyibPay is available. */
 function wallet_topup_is_available(): bool
 {
-    return false;
+    require_once dirname(__DIR__) . '/config/toyyibpay.php';
+    return toyyibpay_is_configured();
+}
+
+function wallet_topup_order_ref(int $topup_id): string
+{
+    return 'WT-' . $topup_id;
+}
+
+function wallet_topup_parse_order_ref(string $order_id): ?int
+{
+    if (preg_match('/^WT-(\d+)$/', $order_id, $m)) {
+        return (int) $m[1];
+    }
+    return null;
 }
 
 /**
- * @return array{success: bool, message: string, balance: float}
+ * @return array{valid: bool, amount: float, message: string}
  */
-function wallet_topup(mysqli $conn, int $user_id, float $amount): array
+function wallet_topup_validate_amount($raw_amount): array
 {
-    wallet_ensure_schema($conn);
-    if (!wallet_topup_is_available()) {
-        return [
-            'success' => false,
-            'message' => 'Wallet top-up is temporarily unavailable. ToyyibPay integration is coming soon.',
-            'balance' => wallet_get_balance($conn, $user_id),
-        ];
+    if (!is_numeric($raw_amount)) {
+        return ['valid' => false, 'amount' => 0.0, 'message' => 'Please enter a valid amount.'];
     }
+
+    $amount = round((float) $raw_amount, 2);
     if ($amount < 1) {
-        return ['success' => false, 'message' => 'Minimum top-up is RM 1.00.', 'balance' => wallet_get_balance($conn, $user_id)];
+        return ['valid' => false, 'amount' => $amount, 'message' => 'Minimum top-up is RM 1.00.'];
     }
     if ($amount > 500) {
-        return ['success' => false, 'message' => 'Maximum top-up per transaction is RM 500.00.', 'balance' => wallet_get_balance($conn, $user_id)];
+        return ['valid' => false, 'amount' => $amount, 'message' => 'Maximum top-up per transaction is RM 500.00.'];
+    }
+
+    return ['valid' => true, 'amount' => $amount, 'message' => ''];
+}
+
+/**
+ * @return array<string, mixed>|null
+ */
+function wallet_topup_fetch(mysqli $conn, int $topup_id, int $user_id): ?array
+{
+    wallet_ensure_schema($conn);
+    $stmt = mysqli_prepare(
+        $conn,
+        'SELECT id, user_id, amount, payment_status, bill_code, transaction_id, paid_at, created_at
+         FROM wallet_topups
+         WHERE id = ? AND user_id = ?
+         LIMIT 1'
+    );
+    if (!$stmt) {
+        return null;
+    }
+    mysqli_stmt_bind_param($stmt, 'ii', $topup_id, $user_id);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+
+    return $row ?: null;
+}
+
+/**
+ * @return array<string, mixed>|null
+ */
+function wallet_topup_fetch_by_bill_code(mysqli $conn, string $bill_code): ?array
+{
+    wallet_ensure_schema($conn);
+    $stmt = mysqli_prepare(
+        $conn,
+        'SELECT id, user_id, amount, payment_status, bill_code, transaction_id, paid_at, created_at
+         FROM wallet_topups
+         WHERE bill_code = ?
+         LIMIT 1'
+    );
+    if (!$stmt) {
+        return null;
+    }
+    mysqli_stmt_bind_param($stmt, 's', $bill_code);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = $res ? mysqli_fetch_assoc($res) : null;
+    mysqli_stmt_close($stmt);
+
+    return $row ?: null;
+}
+
+/**
+ * Create a pending top-up record before redirecting to ToyyibPay.
+ * @return array{success: bool, message: string, topup_id: int}
+ */
+function wallet_topup_create_pending(mysqli $conn, int $user_id, float $amount): array
+{
+    wallet_ensure_schema($conn);
+    $check = wallet_topup_validate_amount($amount);
+    if (!$check['valid']) {
+        return ['success' => false, 'message' => $check['message'], 'topup_id' => 0];
+    }
+
+    $amount = $check['amount'];
+    $status = 'pending';
+    $stmt = mysqli_prepare(
+        $conn,
+        'INSERT INTO wallet_topups (user_id, amount, payment_status) VALUES (?, ?, ?)'
+    );
+    if (!$stmt) {
+        return ['success' => false, 'message' => 'Could not start top-up.', 'topup_id' => 0];
+    }
+    mysqli_stmt_bind_param($stmt, 'ids', $user_id, $amount, $status);
+    if (!mysqli_stmt_execute($stmt)) {
+        mysqli_stmt_close($stmt);
+        return ['success' => false, 'message' => 'Could not start top-up.', 'topup_id' => 0];
+    }
+    $topupId = (int) mysqli_insert_id($conn);
+    mysqli_stmt_close($stmt);
+
+    return ['success' => true, 'message' => 'Top-up started.', 'topup_id' => $topupId];
+}
+
+function wallet_topup_save_bill_code(mysqli $conn, int $topup_id, string $bill_code): bool
+{
+    wallet_ensure_schema($conn);
+    $stmt = mysqli_prepare(
+        $conn,
+        "UPDATE wallet_topups SET bill_code = ?, payment_status = 'pending' WHERE id = ? AND payment_status IN ('pending', 'failed')"
+    );
+    if (!$stmt) {
+        return false;
+    }
+    mysqli_stmt_bind_param($stmt, 'si', $bill_code, $topup_id);
+    $ok = mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
+
+    return (bool) $ok;
+}
+
+/**
+ * Credit wallet balance after a successful ToyyibPay payment.
+ * @return array{success: bool, message: string, balance: float, topup_id: int}
+ */
+function wallet_credit_topup(mysqli $conn, int $user_id, float $amount, string $description = 'Wallet top-up via ToyyibPay'): array
+{
+    wallet_ensure_schema($conn);
+    if ($amount <= 0) {
+        return ['success' => false, 'message' => 'Invalid amount.', 'balance' => wallet_get_balance($conn, $user_id), 'topup_id' => 0];
     }
 
     mysqli_begin_transaction($conn);
@@ -125,7 +270,6 @@ function wallet_topup(mysqli $conn, int $user_id, float $amount): array
         mysqli_stmt_close($stmt);
 
         $balance = wallet_get_balance($conn, $user_id);
-        $desc = 'Wallet top-up';
         $type = 'topup';
         $log = mysqli_prepare(
             $conn,
@@ -135,7 +279,7 @@ function wallet_topup(mysqli $conn, int $user_id, float $amount): array
         if (!$log) {
             throw new RuntimeException('Could not log transaction.');
         }
-        mysqli_stmt_bind_param($log, 'isdds', $user_id, $type, $amount, $balance, $desc);
+        mysqli_stmt_bind_param($log, 'isdds', $user_id, $type, $amount, $balance, $description);
         if (!mysqli_stmt_execute($log)) {
             mysqli_stmt_close($log);
             throw new RuntimeException('Could not log transaction.');
@@ -145,8 +289,9 @@ function wallet_topup(mysqli $conn, int $user_id, float $amount): array
         mysqli_commit($conn);
         return [
             'success' => true,
-            'message' => 'Top-up successful. New balance: ' . wallet_format_rm($balance),
+            'message' => 'Top-up successful.',
             'balance' => $balance,
+            'topup_id' => 0,
         ];
     } catch (Throwable $e) {
         mysqli_rollback($conn);
@@ -154,6 +299,134 @@ function wallet_topup(mysqli $conn, int $user_id, float $amount): array
             'success' => false,
             'message' => 'Top-up failed. Please try again.',
             'balance' => wallet_get_balance($conn, $user_id),
+            'topup_id' => 0,
+        ];
+    }
+}
+
+/**
+ * Apply ToyyibPay callback/return status to a wallet top-up.
+ * @return array{success: bool, message: string, topup_id: int, payment_status: string, balance: float}
+ */
+function wallet_topup_apply_payment(
+    mysqli $conn,
+    string $bill_code,
+    string $payment_status,
+    string $transaction_id,
+    ?string $paid_at = null
+): array {
+    wallet_ensure_schema($conn);
+    $topup = wallet_topup_fetch_by_bill_code($conn, $bill_code);
+    if ($topup === null) {
+        return ['success' => false, 'message' => 'No wallet top-up found for bill code.', 'topup_id' => 0, 'payment_status' => $payment_status, 'balance' => 0.0];
+    }
+
+    $topupId = (int) $topup['id'];
+    $userId = (int) $topup['user_id'];
+    $amount = (float) $topup['amount'];
+    $currentStatus = (string) ($topup['payment_status'] ?? 'pending');
+
+    if ($payment_status === 'pending') {
+        return ['success' => true, 'message' => 'Top-up still pending.', 'topup_id' => $topupId, 'payment_status' => 'pending', 'balance' => wallet_get_balance($conn, $userId)];
+    }
+
+    if ($currentStatus === 'paid') {
+        return ['success' => true, 'message' => 'Top-up already completed.', 'topup_id' => $topupId, 'payment_status' => 'paid', 'balance' => wallet_get_balance($conn, $userId)];
+    }
+
+    if ($payment_status === 'failed') {
+        $stmt = mysqli_prepare(
+            $conn,
+            "UPDATE wallet_topups SET payment_status = 'failed', transaction_id = ? WHERE id = ? AND payment_status = 'pending'"
+        );
+        if (!$stmt) {
+            return ['success' => false, 'message' => 'Database error.', 'topup_id' => $topupId, 'payment_status' => 'failed', 'balance' => wallet_get_balance($conn, $userId)];
+        }
+        mysqli_stmt_bind_param($stmt, 'si', $transaction_id, $topupId);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+
+        return ['success' => true, 'message' => 'Top-up marked as failed.', 'topup_id' => $topupId, 'payment_status' => 'failed', 'balance' => wallet_get_balance($conn, $userId)];
+    }
+
+    if ($payment_status !== 'paid') {
+        return ['success' => false, 'message' => 'Unknown payment status.', 'topup_id' => $topupId, 'payment_status' => $payment_status, 'balance' => wallet_get_balance($conn, $userId)];
+    }
+
+    mysqli_begin_transaction($conn);
+    try {
+        $paidAt = $paid_at ?: date('Y-m-d H:i:s');
+        $lock = mysqli_prepare(
+            $conn,
+            "UPDATE wallet_topups
+             SET payment_status = 'paid', transaction_id = ?, paid_at = ?
+             WHERE id = ? AND payment_status = 'pending'"
+        );
+        if (!$lock) {
+            throw new RuntimeException('Database error.');
+        }
+        mysqli_stmt_bind_param($lock, 'ssi', $transaction_id, $paidAt, $topupId);
+        if (!mysqli_stmt_execute($lock) || mysqli_stmt_affected_rows($lock) === 0) {
+            mysqli_stmt_close($lock);
+            mysqli_commit($conn);
+            return [
+                'success' => true,
+                'message' => 'Top-up already processed.',
+                'topup_id' => $topupId,
+                'payment_status' => 'paid',
+                'balance' => wallet_get_balance($conn, $userId),
+            ];
+        }
+        mysqli_stmt_close($lock);
+
+        $stmt = mysqli_prepare(
+            $conn,
+            'UPDATE users SET wallet_balance = wallet_balance + ? WHERE id = ?'
+        );
+        if (!$stmt) {
+            throw new RuntimeException('Database error.');
+        }
+        mysqli_stmt_bind_param($stmt, 'di', $amount, $userId);
+        if (!mysqli_stmt_execute($stmt) || mysqli_stmt_affected_rows($stmt) === 0) {
+            mysqli_stmt_close($stmt);
+            throw new RuntimeException('Could not update balance.');
+        }
+        mysqli_stmt_close($stmt);
+
+        $balance = wallet_get_balance($conn, $userId);
+        $desc = 'Wallet top-up via ToyyibPay';
+        $type = 'topup';
+        $log = mysqli_prepare(
+            $conn,
+            'INSERT INTO wallet_transactions (user_id, txn_type, amount, balance_after, description)
+             VALUES (?, ?, ?, ?, ?)'
+        );
+        if (!$log) {
+            throw new RuntimeException('Could not log transaction.');
+        }
+        mysqli_stmt_bind_param($log, 'isdds', $userId, $type, $amount, $balance, $desc);
+        if (!mysqli_stmt_execute($log)) {
+            mysqli_stmt_close($log);
+            throw new RuntimeException('Could not log transaction.');
+        }
+        mysqli_stmt_close($log);
+
+        mysqli_commit($conn);
+        return [
+            'success' => true,
+            'message' => 'Wallet credited.',
+            'topup_id' => $topupId,
+            'payment_status' => 'paid',
+            'balance' => $balance,
+        ];
+    } catch (Throwable $e) {
+        mysqli_rollback($conn);
+        return [
+            'success' => false,
+            'message' => 'Could not complete top-up.',
+            'topup_id' => $topupId,
+            'payment_status' => 'paid',
+            'balance' => wallet_get_balance($conn, $userId),
         ];
     }
 }

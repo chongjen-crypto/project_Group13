@@ -165,7 +165,7 @@ if ($res) {
                     <i class="bi bi-send me-1"></i> Send Notification
                 </a>
                 <a href="view_sent_notifications.php" class="btn btn-outline-dark rounded-pill px-4">
-                    <i class="bi bi-bell me-1"></i> View Sent
+                    <i class="bi bi-bell me-1"></i> View Notifications
                 </a>
             </div>
         </div>

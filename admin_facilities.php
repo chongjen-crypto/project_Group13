@@ -44,15 +44,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'rules' => $_POST['rules'] ?? '',
         ]);
         if ($result['success']) {
-            $wasAvailable = is_array($before) && ((string) ($before['status'] ?? '') === 'active');
-            if ($wasAvailable && $newUiStatus === 'unavailable') {
-                $facilityName = trim((string) ($_POST['facility_name'] ?? 'This facility'));
-                notifications_send_to_all_students(
-                    $conn,
-                    'Facility Unavailable',
-                    $facilityName . ' is now unavailable for booking. Please choose another facility.'
-                );
-            }
+            $prevStatus = is_array($before) ? (string) ($before['status'] ?? '') : '';
+            $facilityName = trim((string) ($_POST['facility_name'] ?? 'This facility'));
+            notifications_facility_status_changed($conn, $prevStatus, $newUiStatus, $facilityName);
             header('Location: admin_facilities.php?msg=saved');
             exit();
         }
@@ -61,8 +55,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $facility_id = (int) ($_POST['facility_id'] ?? 0);
         $row = facility_fetch_one($conn, $facility_id);
         if ($row) {
-            $wasAvailable = ((string) ($row['status'] ?? '') === 'active');
-            $newUi = ($row['status'] ?? '') === 'active' ? 'unavailable' : 'available';
+            $prevStatus = (string) ($row['status'] ?? '');
+            $newUi = $prevStatus === 'active' ? 'unavailable' : 'available';
             $result = facility_update($conn, $facility_id, [
                 'facility_name' => $row['facility_name'],
                 'description' => $row['description'] ?? '',
@@ -76,14 +70,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'rules' => $row['rules'] ?? '',
             ]);
             if ($result['success']) {
-                if ($wasAvailable && $newUi === 'unavailable') {
-                    $facilityName = trim((string) ($row['facility_name'] ?? 'This facility'));
-                    notifications_send_to_all_students(
-                        $conn,
-                        'Facility Unavailable',
-                        $facilityName . ' is now unavailable for booking. Please choose another facility.'
-                    );
-                }
+                $facilityName = trim((string) ($row['facility_name'] ?? 'This facility'));
+                notifications_facility_status_changed($conn, $prevStatus, $newUi, $facilityName);
                 header('Location: admin_facilities.php?msg=saved');
                 exit();
             }

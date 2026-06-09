@@ -24,12 +24,19 @@ $student_nav_active = 'wallet';
 $success_msg = '';
 $error_msg = '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'topup') {
-    $error_msg = 'Wallet top-up is temporarily unavailable. ToyyibPay integration is coming soon.';
+if (!empty($_SESSION['wallet_success'])) {
+    $success_msg = (string) $_SESSION['wallet_success'];
+    unset($_SESSION['wallet_success']);
+}
+if (!empty($_SESSION['wallet_error'])) {
+    $error_msg = (string) $_SESSION['wallet_error'];
+    unset($_SESSION['wallet_error']);
 }
 
 $balance = wallet_get_balance($conn, $user_id);
 $transactions = wallet_fetch_transactions($conn, $user_id, 50);
+$topup_available = wallet_topup_is_available();
+$topup_presets = wallet_topup_preset_amounts();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -86,6 +93,50 @@ $transactions = wallet_fetch_transactions($conn, $user_id, 50);
             border: 1px dashed #d1d5db;
             border-radius: 12px;
             padding: 1.25rem 1.5rem;
+        }
+        .topup-preset {
+            border: 1px solid #e5e7eb;
+            background: #fff;
+            border-radius: 10px;
+            padding: 0.65rem 0.5rem;
+            font-weight: 600;
+            color: #111827;
+            transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+        }
+        .topup-preset:hover {
+            border-color: #111827;
+            background: #f9fafb;
+        }
+        .topup-preset.active {
+            border-color: #111827;
+            background: #111827;
+            color: #fff;
+            box-shadow: 0 6px 18px rgba(17, 24, 39, 0.18);
+        }
+        .topup-amount-input {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+        .btn-topup {
+            width: 100%;
+            padding: 0.85rem 1.25rem;
+            font-weight: 700;
+            border: none;
+            border-radius: 10px;
+            background: #111827;
+            color: #fff;
+            transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+        }
+        .btn-topup:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 22px rgba(17, 24, 39, 0.18);
+            background: #1f2937;
+            color: #fff;
+        }
+        .btn-topup:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
         }
         .table-wrap {
             background: #fff;
@@ -164,19 +215,60 @@ $transactions = wallet_fetch_transactions($conn, $user_id, 50);
             <div class="col-lg-7">
                 <div class="card-soft p-4 h-100">
                     <h2 class="h6 fw-bold mb-3"><i class="bi bi-plus-circle text-secondary me-1"></i> Top up wallet</h2>
+
+                    <?php if ($topup_available): ?>
+                    <form method="post" action="wallet_topup_process.php" id="topupForm">
+                        <input type="hidden" name="action" value="topup">
+
+                        <label for="topupAmount" class="form-label small text-muted mb-2">Choose amount or enter custom value</label>
+                        <div class="d-flex flex-wrap gap-2 mb-3">
+                            <?php foreach ($topup_presets as $preset): ?>
+                            <button type="button"
+                                    class="topup-preset flex-fill"
+                                    data-amount="<?php echo htmlspecialchars(number_format($preset, 2, '.', ''), ENT_QUOTES, 'UTF-8'); ?>">
+                                <?php echo htmlspecialchars(wallet_format_rm($preset), ENT_QUOTES, 'UTF-8'); ?>
+                            </button>
+                            <?php endforeach; ?>
+                        </div>
+
+                        <div class="input-group mb-3">
+                            <span class="input-group-text fw-semibold">RM</span>
+                            <input type="number"
+                                   class="form-control topup-amount-input"
+                                   id="topupAmount"
+                                   name="amount"
+                                   min="1"
+                                   max="500"
+                                   step="0.01"
+                                   placeholder="0.00"
+                                   value="10.00"
+                                   required>
+                        </div>
+
+                        <p class="small text-muted mb-3">
+                            <i class="bi bi-globe2 me-1"></i>
+                            You will be redirected to <strong>ToyyibPay</strong> to complete payment securely.
+                        </p>
+
+                        <button type="submit" class="btn-topup" id="btnTopup">
+                            <i class="bi bi-credit-card me-1"></i> Top Up via ToyyibPay
+                        </button>
+                    </form>
+                    <?php else: ?>
                     <div class="topup-unavailable">
                         <div class="d-flex align-items-start gap-3">
                             <div class="text-secondary fs-4"><i class="bi bi-globe2"></i></div>
                             <div>
                                 <div class="fw-semibold mb-1">Top-up unavailable</div>
-                                <p class="small text-muted mb-2">
-                                    Wallet top-up will be processed through <strong>ToyyibPay</strong> once payment integration is ready.
-                                    You can still use your existing balance to pay for bookings with In-App Money at checkout.
+                                <p class="small text-muted mb-0">
+                                    Online top-up requires ToyyibPay configuration. Copy
+                                    <code>config/toyyibpay_local.example.php</code> to
+                                    <code>config/toyyibpay_local.php</code> and add your secret key.
                                 </p>
-                                <span class="badge rounded-pill text-bg-secondary">Coming soon</span>
                             </div>
                         </div>
                     </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -268,6 +360,43 @@ $transactions = wallet_fetch_transactions($conn, $user_id, 50);
         });
     }
     if (backdrop) backdrop.addEventListener('click', closeSidebar);
+
+    var topupForm = document.getElementById('topupForm');
+    var topupAmount = document.getElementById('topupAmount');
+    var presetButtons = document.querySelectorAll('.topup-preset');
+    var btnTopup = document.getElementById('btnTopup');
+
+    function syncPresetHighlight() {
+        if (!topupAmount) return;
+        var current = parseFloat(topupAmount.value || '0').toFixed(2);
+        presetButtons.forEach(function (btn) {
+            var preset = parseFloat(btn.getAttribute('data-amount') || '0').toFixed(2);
+            btn.classList.toggle('active', preset === current);
+        });
+    }
+
+    presetButtons.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            if (!topupAmount) return;
+            topupAmount.value = btn.getAttribute('data-amount');
+            syncPresetHighlight();
+            topupAmount.focus();
+        });
+    });
+
+    if (topupAmount) {
+        topupAmount.addEventListener('input', syncPresetHighlight);
+        syncPresetHighlight();
+    }
+
+    if (topupForm) {
+        topupForm.addEventListener('submit', function () {
+            if (btnTopup) {
+                btnTopup.disabled = true;
+                btnTopup.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Redirecting to ToyyibPay…';
+            }
+        });
+    }
 })();
 </script>
 <?php include __DIR__ . '/includes/student_notification_scripts.php'; ?>
