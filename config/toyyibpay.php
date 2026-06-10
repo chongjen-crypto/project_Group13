@@ -29,17 +29,44 @@ function toyyibpay_app_base_url(): string
     if (defined('TOYYIBPAY_APP_BASE_URL') && TOYYIBPAY_APP_BASE_URL !== '') {
         return rtrim((string) TOYYIBPAY_APP_BASE_URL, '/');
     }
+    if (defined('SCHOLARHUB_APP_BASE_URL') && SCHOLARHUB_APP_BASE_URL !== '') {
+        return rtrim((string) SCHOLARHUB_APP_BASE_URL, '/');
+    }
+
+    $envBase = trim((string) (getenv('TOYYIBPAY_APP_BASE_URL') ?: getenv('SCHOLARHUB_APP_BASE_URL') ?: ''));
+    if ($envBase !== '') {
+        return rtrim($envBase, '/');
+    }
 
     $host = isset($_SERVER['HTTP_HOST']) ? (string) $_SERVER['HTTP_HOST'] : 'localhost';
-    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $host = preg_replace('/:\d+$/', '', $host) ?? $host;
+
+    // Live site on InfinityFree (files at domain root)
+    if (strcasecmp($host, 'scholarhub.infinityfree.me') === 0) {
+        return 'https://scholarhub.infinityfree.me';
+    }
+
+    $scheme = 'http';
+    if (
+        (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (isset($_SERVER['SERVER_PORT']) && (string) $_SERVER['SERVER_PORT'] === '443')
+        || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower((string) $_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https')
+        || (isset($_SERVER['HTTP_X_FORWARDED_SSL']) && strtolower((string) $_SERVER['HTTP_X_FORWARDED_SSL']) === 'on')
+    ) {
+        $scheme = 'https';
+    }
 
     $projectDir = realpath(dirname(__DIR__)) ?: dirname(__DIR__);
     $docRoot = realpath($_SERVER['DOCUMENT_ROOT'] ?? '') ?: '';
+    $webPath = '';
 
     if ($docRoot !== '' && str_starts_with(str_replace('\\', '/', $projectDir), str_replace('\\', '/', $docRoot))) {
         $webPath = substr(str_replace('\\', '/', $projectDir), strlen(str_replace('\\', '/', $docRoot)));
         $webPath = '/' . trim($webPath, '/');
-    } else {
+        if ($webPath === '/') {
+            $webPath = '';
+        }
+    } elseif (in_array($host, ['localhost', '127.0.0.1'], true)) {
         $webPath = '/project_Group13';
     }
 

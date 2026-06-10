@@ -13,5 +13,11 @@ define('TOYYIBPAY_SECRET_KEY', 'your-user-secret-key-here');
  */
 define('TOYYIBPAY_USE_SANDBOX', true);
 
-/** Optional: override return/callback base if auto-detect is wrong (no trailing slash). */
-// define('TOYYIBPAY_APP_BASE_URL', 'http://localhost/project_Group13');
+/**
+ * Public site URL for ToyyibPay return/callback (no trailing slash).
+ * Live InfinityFree:
+ *   https://scholarhub.infinityfree.me
+ * Local XAMPP:
+ *   http://localhost/project_Group13
+ */
+// define('TOYYIBPAY_APP_BASE_URL', 'https://scholarhub.infinityfree.me');
