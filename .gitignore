@@ -1,6 +1,9 @@
 # Local SMTP secrets (copy from includes/mail_local.example.php)
 includes/mail_local.php
 
+# Local / production database credentials (copy from includes/db_local.example.php)
+includes/db_local.php
+
 # Local ToyyibPay credentials (copy from config/toyyibpay_local.example.php)
 config/toyyibpay_local.php
 
