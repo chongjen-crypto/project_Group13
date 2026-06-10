@@ -581,7 +581,7 @@ include __DIR__ . '/includes/student_sidebar.php';
         <!-- ========================= QUICK ACTIONS ========================= -->
         <h2 class="section-title"><i class="bi bi-lightning-charge-fill text-warning"></i> Quick Actions</h2>
         <div class="row g-3 mb-4">
-            <div class="col-6 col-md-3">
+            <div class="col-6 col-md-4">
                 <a href="booking.php" class="card-soft quick-action-card">
                     <div class="icon-wrap" style="background: linear-gradient(135deg,#111827,#374151);">
                         <i class="bi bi-calendar2-plus"></i>
@@ -590,7 +590,7 @@ include __DIR__ . '/includes/student_sidebar.php';
                     <p>Reserve a slot</p>
                 </a>
             </div>
-            <div class="col-6 col-md-3">
+            <div class="col-6 col-md-4">
                 <a href="booking_history.php" class="card-soft quick-action-card">
                     <div class="icon-wrap" style="background: linear-gradient(135deg,#0d6efd,#3b82f6);">
                         <i class="bi bi-clock-history"></i>
@@ -599,22 +599,13 @@ include __DIR__ . '/includes/student_sidebar.php';
                     <p>Track your bookings</p>
                 </a>
             </div>
-            <div class="col-6 col-md-3">
+            <div class="col-6 col-md-4">
                 <a href="student_wallet.php" class="card-soft quick-action-card">
                     <div class="icon-wrap" style="background: linear-gradient(135deg,#059669,#10b981);">
                         <i class="bi bi-wallet2"></i>
                     </div>
                     <h6>Wallet</h6>
                     <p>Balance & top-up</p>
-                </a>
-            </div>
-            <div class="col-6 col-md-3">
-                <a href="#" class="card-soft quick-action-card">
-                    <div class="icon-wrap" style="background: linear-gradient(135deg,#7c3aed,#a78bfa);">
-                        <i class="bi bi-person-badge"></i>
-                    </div>
-                    <h6>My Profile</h6>
-                    <p>Account details</p>
                 </a>
             </div>
         </div>

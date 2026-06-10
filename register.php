@@ -373,6 +373,36 @@ $email_verified_session = !empty($_SESSION['reg_email_verified']) && !empty($_SE
         .pwd-check i { margin-right: 0.25rem; }
         #sendCodeBtn.is-loading, #verifyCodeBtn.is-loading { pointer-events: none; opacity: 0.75; }
         .spinner-border-sm { width: 1rem; height: 1rem; border-width: 0.15em; }
+        .reg-details-section {
+            position: relative;
+            border-radius: 0.75rem;
+            transition: opacity 0.25s ease;
+        }
+        .reg-details-section.is-locked {
+            opacity: 0.55;
+            pointer-events: none;
+            user-select: none;
+        }
+        .reg-details-section.is-locked::after {
+            content: 'Verify your email above to continue';
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 1rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #495057;
+            background: rgba(233, 236, 239, 0.72);
+            border-radius: 0.75rem;
+            z-index: 2;
+        }
+        .reg-details-section.is-locked .form-control,
+        .reg-details-section.is-locked .btn {
+            background-color: #e9ecef;
+        }
         @media (max-width: 575.98px) {
             .form-control, .form-select { font-size: 16px; }
         }
@@ -447,6 +477,7 @@ $email_verified_session = !empty($_SESSION['reg_email_verified']) && !empty($_SE
                 </div>
             </div>
 
+            <div id="registerDetailsSection" class="reg-details-section<?php echo $email_verified_session ? '' : ' is-locked'; ?>">
             <div class="mb-3">
                 <label for="full_name" class="form-label">Full Name</label>
                 <input type="text" class="form-control <?php echo isset($errors['full_name']) ? 'is-invalid' : ''; ?>" id="full_name" name="full_name" value="<?php echo htmlspecialchars($full_name, ENT_QUOTES, 'UTF-8'); ?>" placeholder="Enter your full name">
@@ -497,9 +528,10 @@ $email_verified_session = !empty($_SESSION['reg_email_verified']) && !empty($_SE
             </div>
 
             <div class="d-grid mb-2">
-                <button type="submit" class="btn btn-dark btn-register" id="registerSubmitBtn">
+                <button type="submit" class="btn btn-dark btn-register" id="registerSubmitBtn"<?php echo $email_verified_session ? '' : ' disabled'; ?>>
                     <i class="bi bi-person-plus me-1"></i> Register
                 </button>
+            </div>
             </div>
 
             <div class="text-center mt-2">
@@ -533,8 +565,30 @@ $email_verified_session = !empty($_SESSION['reg_email_verified']) && !empty($_SE
     const cooldownHint = document.getElementById('cooldownHint');
     const banner = document.getElementById('emailVerifiedBanner');
     const form = document.getElementById('registerForm');
+    const detailsSection = document.getElementById('registerDetailsSection');
+    const registerSubmitBtn = document.getElementById('registerSubmitBtn');
 
+    let emailVerified = !!REG.emailVerified;
     let cooldownTimer = null;
+
+    function setDetailsLocked(locked) {
+        emailVerified = !locked;
+        if (detailsSection) {
+            detailsSection.classList.toggle('is-locked', locked);
+        }
+        if (detailsSection) {
+            detailsSection.querySelectorAll('input, button, select, textarea').forEach(function (el) {
+                if (el.id === 'registerSubmitBtn' || el.closest('#registerDetailsSection')) {
+                    el.disabled = locked;
+                }
+            });
+        }
+        if (registerSubmitBtn) {
+            registerSubmitBtn.disabled = locked;
+        }
+    }
+
+    setDetailsLocked(!emailVerified);
 
     function showAjaxAlert(type, msg) {
         ajaxAlert.className = 'alert py-2 ' + (type === 'success' ? 'alert-success' : type === 'danger' ? 'alert-danger' : 'alert-info');
@@ -589,6 +643,15 @@ $email_verified_session = !empty($_SESSION['reg_email_verified']) && !empty($_SE
         banner.classList.remove('d-none');
     }
 
+    emailInput.addEventListener('input', function () {
+        if (emailVerified) {
+            banner.classList.add('d-none');
+            setDetailsLocked(true);
+            REG.emailVerified = false;
+            REG.verifiedEmail = '';
+        }
+    });
+
     codeInput.addEventListener('input', function () {
         codeInput.value = codeInput.value.replace(/\D/g, '').slice(0, 6);
     });
@@ -611,6 +674,9 @@ $email_verified_session = !empty($_SESSION['reg_email_verified']) && !empty($_SE
             if (data.success) {
                 showAjaxAlert('success', data.message || 'Code sent.');
                 banner.classList.add('d-none');
+                setDetailsLocked(true);
+                REG.emailVerified = false;
+                REG.verifiedEmail = '';
                 if (data.cooldown) startCooldown(parseInt(data.cooldown, 10));
             } else {
                 showAjaxAlert('danger', data.message || 'Request failed.');
@@ -642,6 +708,9 @@ $email_verified_session = !empty($_SESSION['reg_email_verified']) && !empty($_SE
             if (data.success) {
                 showAjaxAlert('success', data.message || 'Verified.');
                 banner.classList.remove('d-none');
+                REG.emailVerified = true;
+                REG.verifiedEmail = email.toLowerCase();
+                setDetailsLocked(false);
             } else {
                 verifyCodeError.textContent = data.message || 'Verification failed.';
             }
@@ -738,7 +807,9 @@ $email_verified_session = !empty($_SESSION['reg_email_verified']) && !empty($_SE
         else document.getElementById('student_id').classList.remove('is-invalid');
 
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) err(emailInput, 'emailError', 'Valid email is required.');
-        else emailInput.classList.remove('is-invalid');
+        else if (!emailVerified || email.toLowerCase() !== String(REG.verifiedEmail || '').toLowerCase()) {
+            err(emailInput, 'emailError', 'Please verify your email before registering.');
+        } else emailInput.classList.remove('is-invalid');
 
         if (!pass) err(pwd, 'passwordError', 'Password is required.');
         else if (!passwordStrongClient(pass)) err(pwd, 'passwordError', 'Password does not meet strength requirements.');

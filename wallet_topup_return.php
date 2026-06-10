@@ -26,16 +26,19 @@ $reason = trim((string) ($_GET['reason'] ?? $_GET['msg'] ?? ''));
 $amount = trim((string) ($_GET['amount'] ?? ''));
 $hash = trim((string) ($_GET['hash'] ?? ''));
 
-$hashValid = false;
-if ($status !== '' && $order_id !== '' && $refno !== '' && $hash !== '') {
-    $hashValid = toyyibpay_verify_callback_hash($status, $order_id, $refno, $hash);
-}
+$transaction_id = trim((string) ($_GET['transaction_id'] ?? ''));
 
-if ($hashValid && $billcode !== '' && in_array($status, ['1', '3'], true)) {
-    $mappedStatus = toyyibpay_map_payment_status($status);
-    $transactionId = $refno !== '' ? $refno : ('return-' . $order_id);
-    wallet_topup_apply_payment($conn, $billcode, $mappedStatus, $transactionId);
-}
+$syncResult = toyyibpay_sync_payment_from_return(
+    $conn,
+    $user_id,
+    $status,
+    $billcode,
+    $order_id,
+    $refno,
+    $hash,
+    $transaction_id
+);
+$hashValid = (bool) ($syncResult['hash_valid'] ?? false);
 
 $isSuccess = ($status === '1');
 $isFailed = ($status === '3');

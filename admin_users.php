@@ -5,6 +5,8 @@
 require_once __DIR__ . '/includes/admin_auth.php';
 require_once __DIR__ . '/db.php';
 
+require_once __DIR__ . '/includes/staff_registration_config.php';
+
 $admin_nav_active = 'users';
 $admin_page_title = 'User Management';
 
@@ -239,6 +241,28 @@ foreach ($staff_rows as $row) {
             </div>
         </div>
 
+        <div class="analytics-card border border-warning border-opacity-25 mb-4">
+            <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
+                <div>
+                    <h2 class="section-title mb-2"><i class="bi bi-key-fill text-warning"></i> Staff Registration Code</h2>
+                    <p class="small text-muted mb-0">
+                        Share this code with new staff so they can open the
+                        <a href="staff_registration.php" class="text-decoration-none">staff registration form</a>.
+                        The code expires after <?php echo (int) (STAFF_CODE_TTL_SECONDS / 60); ?> minutes once entered.
+                    </p>
+                </div>
+                <div class="text-end">
+                    <div class="text-muted small text-uppercase fw-bold mb-1">Current code</div>
+                    <div class="d-inline-flex align-items-center gap-2 bg-light border rounded-3 px-3 py-2">
+                        <code class="fs-5 fw-bold text-dark mb-0 user-select-all" id="staffRegCode"><?php echo htmlspecialchars(STAFF_REGISTRATION_CODE, ENT_QUOTES, 'UTF-8'); ?></code>
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" id="copyStaffRegCode" title="Copy code">
+                            <i class="bi bi-clipboard"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </main>
 </div>
 
@@ -362,5 +386,30 @@ foreach ($staff_rows as $row) {
 </div>
 
 <?php include __DIR__ . '/includes/admin_scripts.php'; ?>
+<script>
+(function () {
+    const btn = document.getElementById('copyStaffRegCode');
+    const codeEl = document.getElementById('staffRegCode');
+    if (!btn || !codeEl) return;
+    btn.addEventListener('click', function () {
+        const code = codeEl.textContent.trim();
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(code).then(function () {
+                btn.innerHTML = '<i class="bi bi-check2"></i>';
+                setTimeout(function () { btn.innerHTML = '<i class="bi bi-clipboard"></i>'; }, 1500);
+            });
+        } else {
+            const ta = document.createElement('textarea');
+            ta.value = code;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            btn.innerHTML = '<i class="bi bi-check2"></i>';
+            setTimeout(function () { btn.innerHTML = '<i class="bi bi-clipboard"></i>'; }, 1500);
+        }
+    });
+})();
+</script>
 </body>
 </html>

@@ -49,13 +49,6 @@ $overview_stats = stats_admin_overview($conn);
             <h2 class="section-title"><i class="bi bi-lightning-charge-fill text-warning"></i> Quick Actions</h2>
             <div class="row g-3 mb-2">
                 <div class="col-6 col-md-3">
-                    <a href="admin_users.php" class="card-soft quick-action-card d-block rounded overflow-hidden">
-                        <div class="icon-wrap" style="background: linear-gradient(135deg,#2563eb,#1d4ed8);"><i class="bi bi-people-fill"></i></div>
-                        <h6>User Management</h6>
-                        <p>Student &amp; staff lists</p>
-                    </a>
-                </div>
-                <div class="col-6 col-md-3">
                     <a href="admin_booking_requests.php" class="card-soft quick-action-card d-block rounded overflow-hidden">
                         <div class="icon-wrap" style="background: linear-gradient(135deg,#059669,#047857);"><i class="bi bi-inbox"></i></div>
                         <h6>Booking Requests</h6>
@@ -63,17 +56,17 @@ $overview_stats = stats_admin_overview($conn);
                     </a>
                 </div>
                 <div class="col-6 col-md-3">
-                    <a href="admin_wallet.php" class="card-soft quick-action-card d-block rounded overflow-hidden">
-                        <div class="icon-wrap" style="background: linear-gradient(135deg,#ea580c,#c2410c);"><i class="bi bi-wallet2"></i></div>
-                        <h6>Wallet Overview</h6>
-                        <p>Balances &amp; transactions</p>
-                    </a>
-                </div>
-                <div class="col-6 col-md-3">
                     <a href="admin_facilities.php" class="card-soft quick-action-card d-block rounded overflow-hidden">
                         <div class="icon-wrap" style="background: linear-gradient(135deg,#7c3aed,#6d28d9);"><i class="bi bi-building-fill-gear"></i></div>
                         <h6>Facility Management</h6>
                         <p>All venues &amp; status</p>
+                    </a>
+                </div>
+                <div class="col-6 col-md-3">
+                    <a href="admin/refunds.php" class="card-soft quick-action-card d-block rounded overflow-hidden">
+                        <div class="icon-wrap" style="background: linear-gradient(135deg,#dc2626,#b91c1c);"><i class="bi bi-arrow-counterclockwise"></i></div>
+                        <h6>Refund Management</h6>
+                        <p>Approve wallet refunds</p>
                     </a>
                 </div>
                 <div class="col-6 col-md-3">

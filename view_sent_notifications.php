@@ -23,9 +23,11 @@ if ($role === 'staff') {
 
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/includes/notification_helpers.php';
+require_once __DIR__ . '/includes/list_pager.php';
 
 $success_msg = '';
 $error_msg = '';
+$listPage = max(1, (int) ($_GET['page'] ?? 1));
 
 if (isset($_GET['msg']) && $_GET['msg'] === 'deleted') {
     $success_msg = 'Notification was deleted successfully.';
@@ -48,7 +50,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
     }
 }
 
-$sent_notifications = notifications_fetch_sent_broadcasts($conn, 200);
+$sentList = notifications_fetch_sent_broadcasts_paginated($conn, $listPage, 10);
+$sent_notifications = $sentList['items'];
+$pagination = $sentList['pagination'];
+$pageItems = list_pager_page_items($pagination['page'], $pagination['total_pages']);
 $cancel_href = $role === 'admin' ? 'admin_dashboard.php' : 'staff_dashboard.php';
 $send_href = 'send_notification.php';
 ?>
@@ -61,6 +66,7 @@ $send_href = 'send_notification.php';
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <?php include __DIR__ . '/includes/admin_styles.php'; ?>
+    <?php include __DIR__ . '/includes/list_pager_styles.php'; ?>
 </head>
 <body>
 
@@ -147,6 +153,17 @@ if ($role === 'admin') {
                         </tbody>
                     </table>
                 </div>
+                <?php
+                list_pager_render(
+                    $pagination,
+                    $pageItems,
+                    'view_sent_notifications.php',
+                    'notification',
+                    'notifications',
+                    [],
+                    'Notification pages'
+                );
+                ?>
             </div>
         <?php endif; ?>
 

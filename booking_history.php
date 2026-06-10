@@ -12,6 +12,8 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'student') {
 
 require __DIR__ . '/db.php';
 require_once __DIR__ . '/includes/notification_helpers.php';
+require_once __DIR__ . '/config/toyyibpay.php';
+require_once __DIR__ . '/includes/list_pager.php';
 
 $student_name = isset($_SESSION['full_name']) && trim($_SESSION['full_name']) !== ''
     ? htmlspecialchars($_SESSION['full_name'], ENT_QUOTES, 'UTF-8')
@@ -22,9 +24,34 @@ $student_email = isset($_SESSION['email'])
     : '';
 
 $student_nav_active = 'history';
+$user_id = (int) ($_SESSION['user_id'] ?? 0);
+$listPage = max(1, (int) ($_GET['page'] ?? 1));
+$perPage = 10;
+
+// Manual payment sync (avoid blocking every page load with ToyyibPay API calls).
+if (
+    $_SERVER['REQUEST_METHOD'] === 'POST'
+    && ($_POST['action'] ?? '') === 'sync_payments'
+    && $user_id > 0
+) {
+    $syncCount = 0;
+    if (toyyibpay_is_configured()) {
+        $syncCount = toyyibpay_sync_user_pending_bookings($conn, $user_id, 5);
+    }
+    $syncParam = $syncCount > 0 ? 'synced=' . $syncCount : 'synced=0';
+    header('Location: booking_history.php?' . $syncParam);
+    exit();
+}
 
 // Handle Cancel Action
 $cancel_msg = '';
+$sync_msg = '';
+if (isset($_GET['synced'])) {
+    $syncCount = (int) $_GET['synced'];
+    $sync_msg = $syncCount > 0
+        ? $syncCount . ' payment(s) updated to Paid.'
+        : 'No new paid bookings found. If you just paid, wait a moment and try again.';
+}
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'cancel_booking') {
     $booking_id = (int)$_POST['booking_id'];
     $user_id = (int)$_SESSION['user_id'];
@@ -68,9 +95,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 }
 
-// Fetch all bookings for this user
+// Fetch bookings for this user (paginated)
 $bookings = [];
-$user_id = (int)$_SESSION['user_id'];
+$bookingTotal = 0;
+$countStmt = mysqli_prepare($conn, 'SELECT COUNT(*) AS c FROM bookings WHERE user_id = ?');
+if ($countStmt) {
+    mysqli_stmt_bind_param($countStmt, 'i', $user_id);
+    mysqli_stmt_execute($countStmt);
+    $countRes = mysqli_stmt_get_result($countStmt);
+    $countRow = $countRes ? mysqli_fetch_assoc($countRes) : null;
+    $bookingTotal = (int) ($countRow['c'] ?? 0);
+    mysqli_stmt_close($countStmt);
+}
+
+$pagination = list_pager_meta($bookingTotal, $listPage, $perPage);
+$pageItems = list_pager_page_items($pagination['page'], $pagination['total_pages']);
+
 $sql = "SELECT b.*, 
         CASE WHEN b.facility_type = 'snooker' THEN 'Snooker Room'
              WHEN b.facility_type = 'gym' THEN 'Gym Room'
@@ -84,16 +124,37 @@ $sql = "SELECT b.*,
              ELSE b.facility_type END as facility_name
         FROM bookings b 
         WHERE b.user_id = ? 
-        ORDER BY b.created_at DESC";
+        ORDER BY b.created_at DESC
+        LIMIT ? OFFSET ?";
 $stmt = mysqli_prepare($conn, $sql);
 if ($stmt) {
-    mysqli_stmt_bind_param($stmt, "i", $user_id);
+    $limit = $pagination['per_page'];
+    $offset = $pagination['offset'];
+    mysqli_stmt_bind_param($stmt, 'iii', $user_id, $limit, $offset);
     mysqli_stmt_execute($stmt);
     $res = mysqli_stmt_get_result($stmt);
     while ($row = mysqli_fetch_assoc($res)) {
         $bookings[] = $row;
     }
     mysqli_stmt_close($stmt);
+}
+
+$has_pending_online_payment = false;
+$pendingPayStmt = mysqli_prepare(
+    $conn,
+    "SELECT 1 FROM bookings
+     WHERE user_id = ?
+       AND LOWER(payment_status) = 'pending'
+       AND bill_code IS NOT NULL AND bill_code != ''
+       AND booking_status NOT IN ('cancelled', 'rejected')
+     LIMIT 1"
+);
+if ($pendingPayStmt) {
+    mysqli_stmt_bind_param($pendingPayStmt, 'i', $user_id);
+    mysqli_stmt_execute($pendingPayStmt);
+    mysqli_stmt_store_result($pendingPayStmt);
+    $has_pending_online_payment = mysqli_stmt_num_rows($pendingPayStmt) > 0;
+    mysqli_stmt_close($pendingPayStmt);
 }
 ?>
 <!DOCTYPE html>
@@ -106,6 +167,7 @@ if ($stmt) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <?php include __DIR__ . '/includes/student_styles.php'; ?>
+    <?php include __DIR__ . '/includes/list_pager_styles.php'; ?>
 </head>
 <body>
 
@@ -148,8 +210,24 @@ if ($stmt) {
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         <?php endif; ?>
+        <?php if ($sync_msg !== ''): ?>
+            <div class="alert alert-success alert-dismissible fade show">
+                <?php echo htmlspecialchars($sync_msg, ENT_QUOTES, 'UTF-8'); ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
 
-        <h2 class="section-title"><i class="bi bi-clock-history text-primary"></i> My Bookings</h2>
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <h2 class="section-title mb-0"><i class="bi bi-clock-history text-primary"></i> My Bookings</h2>
+            <?php if ($has_pending_online_payment && toyyibpay_is_configured()): ?>
+            <form method="post" class="m-0">
+                <input type="hidden" name="action" value="sync_payments">
+                <button type="submit" class="btn btn-sm btn-outline-dark rounded-pill px-3">
+                    <i class="bi bi-arrow-repeat me-1"></i> Refresh payment status
+                </button>
+            </form>
+            <?php endif; ?>
+        </div>
         
         <div class="card card-soft p-0 overflow-hidden">
             <div class="table-responsive">
@@ -237,6 +315,17 @@ if ($stmt) {
                     </tbody>
                 </table>
             </div>
+            <?php
+            list_pager_render(
+                $pagination,
+                $pageItems,
+                'booking_history.php',
+                'booking',
+                'bookings',
+                [],
+                'Booking pages'
+            );
+            ?>
         </div>
 
     </main>

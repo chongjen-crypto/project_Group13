@@ -301,13 +301,14 @@ $topup_presets = wallet_topup_preset_amounts();
                             <?php foreach ($transactions as $t): ?>
                             <?php
                             $isTopup = ($t['txn_type'] ?? '') === 'topup';
-                            $amtClass = $isTopup ? 'txn-credit' : 'txn-debit';
-                            $amtPrefix = $isTopup ? '+' : '-';
+                            $isRefund = ($t['txn_type'] ?? '') === 'refund';
+                            $amtClass = ($isTopup || $isRefund) ? 'txn-credit' : 'txn-debit';
+                            $amtPrefix = ($isTopup || $isRefund) ? '+' : '-';
                             ?>
                             <tr>
                                 <td class="ps-4 text-nowrap small"><?php echo htmlspecialchars(wallet_format_datetime((string) $t['created_at']), ENT_QUOTES, 'UTF-8'); ?></td>
                                 <td>
-                                    <span class="badge rounded-pill <?php echo $isTopup ? 'text-bg-success' : 'text-bg-secondary'; ?>">
+                                    <span class="badge rounded-pill <?php echo $isTopup ? 'text-bg-success' : ($isRefund ? 'text-bg-info' : 'text-bg-secondary'); ?>">
                                         <?php echo htmlspecialchars(wallet_txn_type_label((string) $t['txn_type']), ENT_QUOTES, 'UTF-8'); ?>
                                     </span>
                                 </td>

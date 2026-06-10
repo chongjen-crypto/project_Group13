@@ -498,7 +498,11 @@ function wallet_deduct_for_booking(mysqli $conn, int $user_id, float $amount, in
 
 function wallet_txn_type_label(string $type): string
 {
-    return $type === 'topup' ? 'Top-up' : 'Payment';
+    return match ($type) {
+        'topup' => 'Top-up',
+        'refund' => 'Refund',
+        default => 'Payment',
+    };
 }
 
 function wallet_format_datetime(string $datetime): string

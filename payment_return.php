@@ -31,24 +31,21 @@ $reason = trim((string) ($_GET['reason'] ?? $_GET['msg'] ?? ''));
 $amount = trim((string) ($_GET['amount'] ?? ''));
 $hash = trim((string) ($_GET['hash'] ?? ''));
 
-$hashValid = false;
-if ($status !== '' && $order_id !== '' && $refno !== '' && $hash !== '') {
-    $hashValid = toyyibpay_verify_callback_hash($status, $order_id, $refno, $hash);
-}
+$transaction_id = trim((string) ($_GET['transaction_id'] ?? ''));
 
-// On localhost the server callback often cannot reach XAMPP; sync status from return URL when hash is valid.
-if ($hashValid && $billcode !== '' && in_array($status, ['1', '3'], true)) {
-    require_once __DIR__ . '/includes/wallet_helpers.php';
-    if (wallet_topup_fetch_by_bill_code($conn, $billcode) !== null) {
-        $mappedStatus = toyyibpay_map_payment_status($status);
-        $transactionId = $refno !== '' ? $refno : ('return-' . $order_id);
-        wallet_topup_apply_payment($conn, $billcode, $mappedStatus, $transactionId);
-    } else {
-        $mappedStatus = toyyibpay_map_payment_status($status);
-        $transactionId = $refno !== '' ? $refno : ('return-' . $order_id);
-        toyyibpay_apply_payment_update($conn, $billcode, $mappedStatus, $transactionId);
-    }
-}
+// ToyyibPay return URL sends status_id + billcode + order_id only (no hash).
+// Verify via API when hash is absent, then update booking payment status.
+$syncResult = toyyibpay_sync_payment_from_return(
+    $conn,
+    $user_id,
+    $status,
+    $billcode,
+    $order_id,
+    $refno,
+    $hash,
+    $transaction_id
+);
+$hashValid = (bool) ($syncResult['hash_valid'] ?? false);
 
 $isSuccess = ($status === '1');
 $isFailed = ($status === '3');

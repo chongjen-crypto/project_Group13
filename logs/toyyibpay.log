@@ -6,3 +6,26 @@
 [2026-06-08 17:18:06] Bill created, redirecting {"booking_id":17,"bill_code":"vzze4qu3","amount":9.1}
 [2026-06-09 14:57:51] createBill response {"http":200,"body":"\t\t\t\t\t\t\n\t\t[{\"BillCode\":\"2n33sru4\"}]"}
 [2026-06-09 14:57:51] Wallet top-up bill created {"topup_id":1,"bill_code":"2n33sru4","amount":5}
+[2026-06-09 18:21:19] createBill response {"http":200,"body":"\t\t\t\t\t\t\n\t\t[{\"BillCode\":\"xx1boryp\"}]"}
+[2026-06-09 18:21:19] Wallet top-up bill created {"topup_id":2,"bill_code":"xx1boryp","amount":1}
+[2026-06-09 18:21:53] createBill response {"http":200,"body":"\t\t\t\t\t\t\n\t\t[{\"BillCode\":\"xodrwx8m\"}]"}
+[2026-06-09 18:21:53] Bill created, redirecting {"booking_id":18,"bill_code":"xodrwx8m","amount":9.1}
+[2026-06-09 18:23:28] Resume existing bill {"booking_id":18,"bill_code":"xodrwx8m"}
+[2026-06-09 18:23:58] createBill response {"http":200,"body":"\t\t\t\t\t\t\n\t\t[{\"BillCode\":\"nyziyazn\"}]"}
+[2026-06-09 18:23:58] Bill created, redirecting {"booking_id":19,"bill_code":"nyziyazn","amount":9.1}
+[2026-06-09 18:24:29] createBill response {"http":200,"body":"\t\t\t\t\t\t\n\t\t[{\"BillCode\":\"ovdgyjw8\"}]"}
+[2026-06-09 18:24:29] Bill created, redirecting {"booking_id":20,"bill_code":"ovdgyjw8","amount":9.1}
+[2026-06-09 18:25:30] createBill response {"http":200,"body":"\t\t\t\t\t\t\n\t\t[{\"BillCode\":\"rwc44o93\"}]"}
+[2026-06-09 18:25:30] Bill created, redirecting {"booking_id":21,"bill_code":"rwc44o93","amount":9.1}
+[2026-06-09 18:26:55] createBill response {"http":200,"body":"\t\t\t\t\t\t\n\t\t[{\"BillCode\":\"rfbsxlxu\"}]"}
+[2026-06-09 18:26:55] Bill created, redirecting {"booking_id":22,"bill_code":"rfbsxlxu","amount":9.1}
+[2026-06-09 18:27:57] Resume existing bill {"booking_id":22,"bill_code":"rfbsxlxu"}
+[2026-06-10 09:13:25] createBill response {"http":200,"body":"\t\t\t\t\t\t\n\t\t[{\"BillCode\":\"0x4569x6\"}]"}
+[2026-06-10 09:13:25] Bill created, redirecting {"booking_id":23,"bill_code":"0x4569x6","amount":9.1}
+[2026-06-10 09:17:58] createBill response {"http":200,"body":"\t\t\t\t\t\t\n\t\t[{\"BillCode\":\"8kfgrimy\"}]"}
+[2026-06-10 09:17:58] Bill created, redirecting {"booking_id":24,"bill_code":"8kfgrimy","amount":9.1}
+[2026-06-10 09:25:18] createBill response {"http":200,"body":"\t\t\t\t\t\t\n\t\t[{\"BillCode\":\"m3byw3et\"}]"}
+[2026-06-10 09:25:18] Bill created, redirecting {"booking_id":25,"bill_code":"m3byw3et","amount":0.1}
+[2026-06-10 09:26:20] createBill response {"http":200,"body":"\t\t\t\t\t\t\n\t\t[{\"BillCode\":\"4ub62jh5\"}]"}
+[2026-06-10 09:26:20] Bill created, redirecting {"booking_id":26,"bill_code":"4ub62jh5","amount":1}
+[2026-06-10 09:29:29] Resume existing bill {"booking_id":26,"bill_code":"4ub62jh5"}

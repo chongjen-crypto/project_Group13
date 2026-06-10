@@ -4,9 +4,13 @@
  */
 require_once __DIR__ . '/includes/admin_auth.php';
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/includes/list_pager.php';
 
 $admin_nav_active = 'requests';
 $admin_page_title = 'Booking Requests';
+
+$listPage = max(1, (int) ($_GET['page'] ?? 1));
+$perPage = 10;
 
 $status_badges = [
     'pending' => 'text-bg-warning',
@@ -16,35 +20,54 @@ $status_badges = [
     'completed' => 'text-bg-info',
 ];
 
+$facilityCase = "CASE WHEN b.facility_type = 'snooker' THEN 'Snooker Room'
+     WHEN b.facility_type = 'gym' THEN 'Gym Room'
+     WHEN b.facility_type = 'swimming' THEN 'Swimming Pool'
+     WHEN b.facility_type = 'track' THEN 'Track Field'
+     WHEN b.facility_type = 'badminton' THEN 'Badminton Court'
+     WHEN b.facility_type = 'basketball' THEN 'Basketball Court'
+     WHEN b.facility_type = 'futsal' THEN 'Futsal Court'
+     WHEN b.facility_type = 'tennis' THEN 'Tennis Court'
+     WHEN b.facility_type = 'volleyball' THEN 'Volleyball Court'
+     ELSE b.facility_type END";
+
+$bookingTotal = 0;
+$countRes = mysqli_query($conn, 'SELECT COUNT(*) AS c FROM bookings b JOIN users u ON b.user_id = u.id');
+if ($countRes) {
+    $countRow = mysqli_fetch_assoc($countRes);
+    $bookingTotal = (int) ($countRow['c'] ?? 0);
+}
+
+$pagination = list_pager_meta($bookingTotal, $listPage, $perPage);
+$pageItems = list_pager_page_items($pagination['page'], $pagination['total_pages']);
+
 $all_bookings = [];
 $sql = "SELECT b.booking_id AS id, u.full_name AS student, b.facility_type, b.booking_date AS date,
         b.start_time, b.end_time, b.booking_status, b.purpose,
-        CASE WHEN b.facility_type = 'snooker' THEN 'Snooker Room'
-             WHEN b.facility_type = 'gym' THEN 'Gym Room'
-             WHEN b.facility_type = 'swimming' THEN 'Swimming Pool'
-             WHEN b.facility_type = 'track' THEN 'Track Field'
-             WHEN b.facility_type = 'badminton' THEN 'Badminton Court'
-             WHEN b.facility_type = 'basketball' THEN 'Basketball Court'
-             WHEN b.facility_type = 'futsal' THEN 'Futsal Court'
-             WHEN b.facility_type = 'tennis' THEN 'Tennis Court'
-             WHEN b.facility_type = 'volleyball' THEN 'Volleyball Court'
-             ELSE b.facility_type END AS facility
+        ({$facilityCase}) AS facility
         FROM bookings b
         JOIN users u ON b.user_id = u.id
-        ORDER BY b.created_at DESC";
-$res = mysqli_query($conn, $sql);
-if ($res) {
+        ORDER BY b.created_at DESC
+        LIMIT ? OFFSET ?";
+$stmt = mysqli_prepare($conn, $sql);
+if ($stmt) {
+    $limit = $pagination['per_page'];
+    $offset = $pagination['offset'];
+    mysqli_stmt_bind_param($stmt, 'ii', $limit, $offset);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
     while ($row = mysqli_fetch_assoc($res)) {
         $row['time'] = substr($row['start_time'], 0, 5) . ' - ' . substr($row['end_time'], 0, 5);
         $all_bookings[] = $row;
     }
+    mysqli_stmt_close($stmt);
 }
 
 $pending_count = 0;
-foreach ($all_bookings as $b) {
-    if (($b['booking_status'] ?? '') === 'pending') {
-        $pending_count++;
-    }
+$pendingRes = mysqli_query($conn, "SELECT COUNT(*) AS c FROM bookings WHERE booking_status = 'pending'");
+if ($pendingRes) {
+    $pendingRow = mysqli_fetch_assoc($pendingRes);
+    $pending_count = (int) ($pendingRow['c'] ?? 0);
 }
 ?>
 <!DOCTYPE html>
@@ -56,6 +79,7 @@ foreach ($all_bookings as $b) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <?php include __DIR__ . '/includes/admin_styles.php'; ?>
+    <?php include __DIR__ . '/includes/list_pager_styles.php'; ?>
 </head>
 <body>
 
@@ -127,6 +151,17 @@ foreach ($all_bookings as $b) {
                     </tbody>
                 </table>
             </div>
+            <?php
+            list_pager_render(
+                $pagination,
+                $pageItems,
+                'admin_booking_requests.php',
+                'request',
+                'requests',
+                [],
+                'Booking request pages'
+            );
+            ?>
         </div>
     </main>
 </div>

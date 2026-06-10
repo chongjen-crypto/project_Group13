@@ -128,9 +128,8 @@ $pageItems = admin_wallet_page_items($pagination['page'], $pagination['total_pag
             </div>
             <div class="col-6 col-xl-3">
                 <div class="analytics-card border border-success border-opacity-25">
-                    <div class="text-muted small text-uppercase fw-bold">This Month Paid</div>
+                    <div class="text-muted small text-uppercase fw-bold">This Month Paid — <?php echo htmlspecialchars(date('F Y'), ENT_QUOTES, 'UTF-8'); ?></div>
                     <div class="fs-4 fw-bold mt-2 text-success">RM <?php echo number_format($wallet['paid_this_month'], 2); ?></div>
-                    <small class="text-muted"><?php echo htmlspecialchars(date('F Y'), ENT_QUOTES, 'UTF-8'); ?></small>
                 </div>
             </div>
             <div class="col-6 col-xl-3">

@@ -349,6 +349,240 @@ function toyyibpay_payment_url(string $bill_code): string
 }
 
 /**
+ * Fetch bill transactions from ToyyibPay API.
+ * @return list<array<string, mixed>>
+ */
+function toyyibpay_fetch_bill_transactions(string $bill_code, ?string $payment_status_filter = null): array
+{
+    $config = toyyibpay_config();
+    if ($config['secret_key'] === '' || $bill_code === '') {
+        return [];
+    }
+
+    $payload = [
+        'userSecretKey' => $config['secret_key'],
+        'billCode' => $bill_code,
+    ];
+    if ($payment_status_filter !== null && $payment_status_filter !== '') {
+        $payload['billpaymentStatus'] = $payment_status_filter;
+    }
+
+    $url = $config['api_base'] . '/getBillTransactions';
+    $ch = curl_init($url);
+    if ($ch === false) {
+        return [];
+    }
+
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => http_build_query($payload),
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 8,
+        CURLOPT_CONNECTTIMEOUT => 5,
+        CURLOPT_HTTPHEADER => ['Content-Type: application/x-www-form-urlencoded'],
+        CURLOPT_SSL_VERIFYPEER => true,
+    ]);
+
+    $response = curl_exec($ch);
+    curl_close($ch);
+    if ($response === false || $response === '') {
+        return [];
+    }
+
+    $decoded = json_decode($response, true);
+    if (!is_array($decoded)) {
+        return [];
+    }
+
+    if (isset($decoded[0]) && is_array($decoded[0])) {
+        return $decoded;
+    }
+    if (isset($decoded['billpaymentStatus'])) {
+        return [$decoded];
+    }
+
+    return [];
+}
+
+/**
+ * @return array<string, mixed>|null
+ */
+function toyyibpay_get_successful_transaction(string $bill_code): ?array
+{
+    $transactions = toyyibpay_fetch_bill_transactions($bill_code, '1');
+    if ($transactions === []) {
+        $transactions = toyyibpay_fetch_bill_transactions($bill_code);
+    }
+
+    foreach ($transactions as $tx) {
+        if (!is_array($tx)) {
+            continue;
+        }
+        if ((string) ($tx['billpaymentStatus'] ?? '') === '1') {
+            return $tx;
+        }
+    }
+
+    return null;
+}
+
+function toyyibpay_bill_is_paid(string $bill_code): bool
+{
+    return toyyibpay_get_successful_transaction($bill_code) !== null;
+}
+
+/**
+ * Apply payment status after ToyyibPay browser return.
+ * Return URL only sends status_id, billcode, order_id (no hash/refno).
+ * Verifies via callback hash when present, otherwise getBillTransactions API.
+ *
+ * @return array{updated: bool, hash_valid: bool, payment_status: string}
+ */
+function toyyibpay_sync_payment_from_return(
+    mysqli $conn,
+    int $user_id,
+    string $status,
+    string $billcode,
+    string $order_id,
+    string $refno,
+    string $hash,
+    string $transaction_id = ''
+): array {
+    $result = ['updated' => false, 'hash_valid' => false, 'payment_status' => 'pending'];
+
+    if ($billcode === '' || !in_array($status, ['1', '3'], true)) {
+        return $result;
+    }
+
+    $hashValid = $refno !== '' && $hash !== '' && $order_id !== ''
+        && toyyibpay_verify_callback_hash($status, $order_id, $refno, $hash);
+    $result['hash_valid'] = $hashValid;
+
+    $mappedStatus = toyyibpay_map_payment_status($status);
+    $result['payment_status'] = $mappedStatus;
+
+    $verified = $hashValid;
+    if (!$verified && $status === '1') {
+        $verified = toyyibpay_get_successful_transaction($billcode) !== null;
+    }
+    if (!$verified && $status === '3') {
+        $verified = true;
+    }
+
+    if (!$verified) {
+        toyyibpay_log('Return sync skipped: payment not verified', [
+            'billcode' => $billcode,
+            'status' => $status,
+            'user_id' => $user_id,
+        ]);
+        return $result;
+    }
+
+    require_once dirname(__DIR__) . '/includes/wallet_helpers.php';
+
+    $txnId = $refno !== '' ? $refno : $transaction_id;
+    if ($txnId === '' && $status === '1') {
+        $tx = toyyibpay_get_successful_transaction($billcode);
+        if ($tx !== null) {
+            $txnId = (string) ($tx['billpaymentInvoiceNo'] ?? $tx['billPaymentInvoiceNo'] ?? '');
+        }
+    }
+    if ($txnId === '') {
+        $txnId = 'return-' . ($order_id !== '' ? $order_id : $billcode);
+    }
+
+    $topup = wallet_topup_fetch_by_bill_code($conn, $billcode);
+    if ($topup !== null) {
+        if ((int) ($topup['user_id'] ?? 0) !== $user_id) {
+            return $result;
+        }
+        $update = wallet_topup_apply_payment($conn, $billcode, $mappedStatus, $txnId);
+        $result['updated'] = (bool) ($update['success'] ?? false);
+        return $result;
+    }
+
+    $ownerCheck = mysqli_prepare(
+        $conn,
+        'SELECT booking_id FROM bookings WHERE bill_code = ? AND user_id = ? LIMIT 1'
+    );
+    if (!$ownerCheck) {
+        return $result;
+    }
+    mysqli_stmt_bind_param($ownerCheck, 'si', $billcode, $user_id);
+    mysqli_stmt_execute($ownerCheck);
+    $ownerRes = mysqli_stmt_get_result($ownerCheck);
+    $owns = $ownerRes && mysqli_fetch_assoc($ownerRes);
+    mysqli_stmt_close($ownerCheck);
+
+    if (!$owns) {
+        return $result;
+    }
+
+    $update = toyyibpay_apply_payment_update($conn, $billcode, $mappedStatus, $txnId);
+    $result['updated'] = (bool) ($update['success'] ?? false);
+    toyyibpay_log('Return sync applied', [
+        'billcode' => $billcode,
+        'payment_status' => $mappedStatus,
+        'hash_valid' => $hashValid,
+        'updated' => $result['updated'],
+    ]);
+
+    return $result;
+}
+
+/**
+ * Sync pending online bookings for a student by checking ToyyibPay API.
+ * Limited to avoid slow page loads (each bill = one API call).
+ */
+function toyyibpay_sync_user_pending_bookings(mysqli $conn, int $user_id, int $maxBills = 5): int
+{
+    toyyibpay_ensure_booking_columns($conn);
+
+    $stmt = mysqli_prepare(
+        $conn,
+        "SELECT DISTINCT bill_code FROM bookings
+         WHERE user_id = ? AND payment_status = 'pending'
+           AND bill_code IS NOT NULL AND TRIM(bill_code) != ''"
+    );
+    if (!$stmt) {
+        return 0;
+    }
+    mysqli_stmt_bind_param($stmt, 'i', $user_id);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+
+    $checked = 0;
+    $updated = 0;
+    while ($row = mysqli_fetch_assoc($res)) {
+        if ($maxBills > 0 && $checked >= $maxBills) {
+            break;
+        }
+        $billCode = trim((string) ($row['bill_code'] ?? ''));
+        if ($billCode === '') {
+            continue;
+        }
+        $checked++;
+
+        $tx = toyyibpay_get_successful_transaction($billCode);
+        if ($tx === null) {
+            continue;
+        }
+
+        $txnId = (string) ($tx['billpaymentInvoiceNo'] ?? $tx['billPaymentInvoiceNo'] ?? '');
+        if ($txnId === '') {
+            $txnId = 'sync-' . $billCode;
+        }
+        $result = toyyibpay_apply_payment_update($conn, $billCode, 'paid', $txnId);
+        if (!empty($result['success'])) {
+            $updated++;
+        }
+    }
+    mysqli_stmt_close($stmt);
+
+    return $updated;
+}
+
+/**
  * Verify ToyyibPay callback hash.
  * Formula: MD5(userSecretKey + status + order_id + refno + "ok")
  */

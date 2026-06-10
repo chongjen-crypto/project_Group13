@@ -336,6 +336,68 @@ function notifications_fetch_sent_broadcasts(mysqli $conn, int $limit = 100): ar
     return $items;
 }
 
+function notifications_count_sent_broadcasts(mysqli $conn): int
+{
+    notifications_ensure_table($conn);
+
+    $res = mysqli_query(
+        $conn,
+        "SELECT COUNT(*) AS c FROM (
+            SELECT 1 FROM notifications
+            GROUP BY title, message, FLOOR(UNIX_TIMESTAMP(created_at) / 60)
+        ) grouped"
+    );
+    if (!$res) {
+        return 0;
+    }
+    $row = mysqli_fetch_assoc($res);
+
+    return (int) ($row['c'] ?? 0);
+}
+
+/**
+ * Paginated broadcasts for admin/staff view.
+ *
+ * @return array{items: list<array{title: string, message: string, sent_at: string, sent_minute: int, recipient_count: int}>, pagination: array<string, int>}
+ */
+function notifications_fetch_sent_broadcasts_paginated(mysqli $conn, int $page = 1, int $perPage = 10): array
+{
+    require_once __DIR__ . '/list_pager.php';
+
+    notifications_ensure_table($conn);
+    $total = notifications_count_sent_broadcasts($conn);
+    $pagination = list_pager_meta($total, $page, $perPage);
+
+    $items = [];
+    $sql = "SELECT title, message, MIN(created_at) AS sent_at,
+                   FLOOR(UNIX_TIMESTAMP(MIN(created_at)) / 60) AS sent_minute,
+                   COUNT(*) AS recipient_count
+            FROM notifications
+            GROUP BY title, message, FLOOR(UNIX_TIMESTAMP(created_at) / 60)
+            ORDER BY sent_at DESC
+            LIMIT ? OFFSET ?";
+    $stmt = mysqli_prepare($conn, $sql);
+    if ($stmt) {
+        $limit = $pagination['per_page'];
+        $offset = $pagination['offset'];
+        mysqli_stmt_bind_param($stmt, 'ii', $limit, $offset);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        while ($row = mysqli_fetch_assoc($res)) {
+            $items[] = [
+                'title' => (string) $row['title'],
+                'message' => (string) $row['message'],
+                'sent_at' => (string) $row['sent_at'],
+                'sent_minute' => (int) $row['sent_minute'],
+                'recipient_count' => (int) $row['recipient_count'],
+            ];
+        }
+        mysqli_stmt_close($stmt);
+    }
+
+    return ['items' => $items, 'pagination' => $pagination];
+}
+
 /**
  * Delete one broadcast (all student copies for that title/message/send minute).
  *
