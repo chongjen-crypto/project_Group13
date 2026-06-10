@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 09, 2026 at 06:12 PM
+-- Generation Time: Jun 10, 2026 at 09:39 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -118,7 +118,16 @@ INSERT INTO `bookings` (`booking_id`, `user_id`, `facility_type`, `court_id`, `b
 (14, 11, 'basketball', 1, '2026-06-08', '08:00:00', '09:00:00', '', 'pending', 'in_app', 5.00, 'paid', NULL, NULL, NULL, '2026-06-08 00:58:18', NULL),
 (15, 11, 'badminton', 1, '2026-06-08', '08:00:00', '09:00:00', '', 'pending', 'in_app', 9.10, 'paid', NULL, NULL, NULL, '2026-06-08 00:59:08', NULL),
 (16, 11, 'badminton', 1, '2026-06-08', '09:00:00', '10:00:00', '', 'pending', 'in_app', 9.10, 'paid', NULL, NULL, NULL, '2026-06-08 01:35:30', NULL),
-(17, 11, 'badminton', 1, '2026-06-08', '16:00:00', '17:00:00', '', 'pending', 'online', 9.10, 'pending', 'vzze4qu3', NULL, NULL, '2026-06-08 15:18:05', NULL);
+(17, 11, 'badminton', 1, '2026-06-08', '16:00:00', '17:00:00', '', 'cancelled', 'online', 9.10, 'pending', 'vzze4qu3', NULL, NULL, '2026-06-08 15:18:05', NULL),
+(18, 11, 'badminton', 1, '2026-06-10', '08:00:00', '09:00:00', '', 'cancelled', 'online', 9.10, 'pending', 'xodrwx8m', NULL, NULL, '2026-06-09 16:21:51', NULL),
+(19, 11, 'badminton', 1, '2026-06-10', '08:00:00', '09:00:00', '', 'cancelled', 'online', 9.10, 'pending', 'nyziyazn', NULL, NULL, '2026-06-09 16:23:57', NULL),
+(20, 11, 'badminton', 1, '2026-06-10', '08:00:00', '09:00:00', '', 'cancelled', 'online', 9.10, 'pending', 'ovdgyjw8', NULL, NULL, '2026-06-09 16:24:28', NULL),
+(21, 11, 'badminton', 1, '2026-06-10', '08:00:00', '09:00:00', '', 'cancelled', 'online', 9.10, 'pending', 'rwc44o93', NULL, NULL, '2026-06-09 16:25:29', NULL),
+(22, 11, 'badminton', 1, '2026-06-10', '08:00:00', '09:00:00', '', 'cancelled', 'online', 9.10, 'pending', 'rfbsxlxu', NULL, NULL, '2026-06-09 16:26:54', NULL),
+(23, 11, 'badminton', 1, '2026-06-10', '08:00:00', '09:00:00', '', 'cancelled', 'online', 9.10, 'pending', '0x4569x6', NULL, NULL, '2026-06-10 07:13:24', NULL),
+(24, 11, 'badminton', 1, '2026-06-10', '08:00:00', '09:00:00', '', 'cancelled', 'online', 9.10, 'pending', '8kfgrimy', NULL, NULL, '2026-06-10 07:17:57', NULL),
+(25, 11, 'badminton', 1, '2026-06-10', '09:00:00', '10:00:00', '', 'cancelled', 'online', 0.10, 'pending', 'm3byw3et', NULL, NULL, '2026-06-10 07:25:17', NULL),
+(26, 11, 'badminton', 1, '2026-06-10', '08:00:00', '09:00:00', '', 'pending', 'online', 1.00, 'paid', '4ub62jh5', 'TP2606104861303766', '2026-06-10 09:35:59', '2026-06-10 07:26:19', NULL);
 
 -- --------------------------------------------------------
 
@@ -147,7 +156,7 @@ CREATE TABLE `facilities` (
 --
 
 INSERT INTO `facilities` (`facility_id`, `facility_name`, `facility_type`, `description`, `image`, `location`, `opening_time`, `closing_time`, `status`, `created_at`, `price_amount`, `price_mode`, `rules`) VALUES
-(1, 'Badminton Court', 'badminton', 'A well-maintained indoor badminton facility suitable for recreational play, training sessions, and organized matches.', 'assets/badmintoncourt.webp', 'Sports Complex', '08:00:00', '22:00:00', 'active', '2026-05-22 03:44:25', 9.10, 'hourly', 'Non-marking indoor sports shoes only.\r\nMaximum session length follows your booking slot.\r\nFood and drinks (except sealed water) are not allowed on court.'),
+(1, 'Badminton Court', 'badminton', 'A well-maintained indoor badminton facility suitable for recreational play, training sessions, and organized matches.', 'assets/badmintoncourt.webp', 'Sports Complex', '08:00:00', '22:00:00', 'active', '2026-05-22 03:44:25', 1.00, 'hourly', 'Non-marking indoor sports shoes only.\r\nMaximum session length follows your booking slot.\r\nFood and drinks (except sealed water) are not allowed on court.'),
 (2, 'Basketball Court', 'basketball', 'A full-size basketball facility suitable for individual practice, team training, and competitive matches.', 'assets/basketballcourt.jpeg', 'Sports Complex', '08:00:00', '22:00:00', 'active', '2026-05-22 03:44:25', 5.00, 'hourly', 'Indoor basketball shoes only.\nShare court fairly during open slots.\nNo dunking on portable hoops unless allowed.'),
 (3, 'Futsal Court', 'futsal', 'An indoor futsal facility suitable for team practice, recreational matches, and organized tournaments.', 'assets/futsalcourt.jpg', 'Sports Complex', '08:00:00', '22:00:00', 'active', '2026-05-22 03:44:25', 5.00, 'hourly', 'Indoor futsal shoes only.\nRespect booked slot end times.\nReport damaged turf to staff.'),
 (4, 'Tennis Court', 'tennis', 'An outdoor tennis facility designed to support recreational activities, skill development, and competitive play.', 'assets/tenniscourt.jpg', 'Sports Complex', '08:00:00', '22:00:00', 'closed', '2026-05-22 03:44:25', 5.00, 'hourly', 'Proper tennis shoes required.\r\nRespect booked court times.\r\nReport equipment issues to staff.'),
@@ -268,7 +277,176 @@ INSERT INTO `notifications` (`id`, `user_id`, `title`, `message`, `is_read`, `cr
 (81, 18, 'New Booking Request', 'student submitted a new booking request #17 for Badminton Court on 2026-06-08 (16:00 - 17:00).', 0, '2026-06-08 15:18:05'),
 (82, 19, 'New Booking Request', 'student submitted a new booking request #17 for Badminton Court on 2026-06-08 (16:00 - 17:00).', 0, '2026-06-08 15:18:05'),
 (83, 20, 'New Booking Request', 'student submitted a new booking request #17 for Badminton Court on 2026-06-08 (16:00 - 17:00).', 0, '2026-06-08 15:18:05'),
-(84, 21, 'New Booking Request', 'student submitted a new booking request #17 for Badminton Court on 2026-06-08 (16:00 - 17:00).', 0, '2026-06-08 15:18:05');
+(84, 21, 'New Booking Request', 'student submitted a new booking request #17 for Badminton Court on 2026-06-08 (16:00 - 17:00).', 0, '2026-06-08 15:18:05'),
+(85, 5, 'New Booking Request', 'student submitted a new booking request #18 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:21:51'),
+(86, 12, 'New Booking Request', 'student submitted a new booking request #18 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:21:51'),
+(87, 13, 'New Booking Request', 'student submitted a new booking request #18 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 1, '2026-06-09 16:21:51'),
+(88, 18, 'New Booking Request', 'student submitted a new booking request #18 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:21:51'),
+(89, 19, 'New Booking Request', 'student submitted a new booking request #18 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:21:51'),
+(90, 20, 'New Booking Request', 'student submitted a new booking request #18 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:21:51'),
+(91, 21, 'New Booking Request', 'student submitted a new booking request #18 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:21:51'),
+(92, 5, 'Student Booking Cancelled', 'student cancelled booking #17 for Badminton Court on 2026-06-08 (16:00 - 17:00).', 0, '2026-06-09 16:23:39'),
+(93, 12, 'Student Booking Cancelled', 'student cancelled booking #17 for Badminton Court on 2026-06-08 (16:00 - 17:00).', 0, '2026-06-09 16:23:39'),
+(94, 13, 'Student Booking Cancelled', 'student cancelled booking #17 for Badminton Court on 2026-06-08 (16:00 - 17:00).', 1, '2026-06-09 16:23:39'),
+(95, 18, 'Student Booking Cancelled', 'student cancelled booking #17 for Badminton Court on 2026-06-08 (16:00 - 17:00).', 0, '2026-06-09 16:23:39'),
+(96, 19, 'Student Booking Cancelled', 'student cancelled booking #17 for Badminton Court on 2026-06-08 (16:00 - 17:00).', 0, '2026-06-09 16:23:39'),
+(97, 20, 'Student Booking Cancelled', 'student cancelled booking #17 for Badminton Court on 2026-06-08 (16:00 - 17:00).', 0, '2026-06-09 16:23:39'),
+(98, 21, 'Student Booking Cancelled', 'student cancelled booking #17 for Badminton Court on 2026-06-08 (16:00 - 17:00).', 0, '2026-06-09 16:23:39'),
+(99, 5, 'Student Booking Cancelled', 'student cancelled booking #18 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:23:41'),
+(100, 12, 'Student Booking Cancelled', 'student cancelled booking #18 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:23:41'),
+(101, 13, 'Student Booking Cancelled', 'student cancelled booking #18 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 1, '2026-06-09 16:23:41'),
+(102, 18, 'Student Booking Cancelled', 'student cancelled booking #18 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:23:41'),
+(103, 19, 'Student Booking Cancelled', 'student cancelled booking #18 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:23:41'),
+(104, 20, 'Student Booking Cancelled', 'student cancelled booking #18 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:23:41'),
+(105, 21, 'Student Booking Cancelled', 'student cancelled booking #18 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:23:41'),
+(106, 5, 'New Booking Request', 'student submitted a new booking request #19 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:23:57'),
+(107, 12, 'New Booking Request', 'student submitted a new booking request #19 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:23:57'),
+(108, 13, 'New Booking Request', 'student submitted a new booking request #19 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 1, '2026-06-09 16:23:57'),
+(109, 18, 'New Booking Request', 'student submitted a new booking request #19 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:23:57'),
+(110, 19, 'New Booking Request', 'student submitted a new booking request #19 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:23:57'),
+(111, 20, 'New Booking Request', 'student submitted a new booking request #19 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:23:57'),
+(112, 21, 'New Booking Request', 'student submitted a new booking request #19 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:23:57'),
+(113, 5, 'Student Booking Cancelled', 'student cancelled booking #19 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:24:19'),
+(114, 12, 'Student Booking Cancelled', 'student cancelled booking #19 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:24:19'),
+(115, 13, 'Student Booking Cancelled', 'student cancelled booking #19 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 1, '2026-06-09 16:24:19'),
+(116, 18, 'Student Booking Cancelled', 'student cancelled booking #19 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:24:19'),
+(117, 19, 'Student Booking Cancelled', 'student cancelled booking #19 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:24:19'),
+(118, 20, 'Student Booking Cancelled', 'student cancelled booking #19 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:24:19'),
+(119, 21, 'Student Booking Cancelled', 'student cancelled booking #19 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:24:19'),
+(120, 5, 'New Booking Request', 'student submitted a new booking request #20 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:24:28'),
+(121, 12, 'New Booking Request', 'student submitted a new booking request #20 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:24:28'),
+(122, 13, 'New Booking Request', 'student submitted a new booking request #20 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 1, '2026-06-09 16:24:28'),
+(123, 18, 'New Booking Request', 'student submitted a new booking request #20 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:24:28'),
+(124, 19, 'New Booking Request', 'student submitted a new booking request #20 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:24:28'),
+(125, 20, 'New Booking Request', 'student submitted a new booking request #20 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:24:28'),
+(126, 21, 'New Booking Request', 'student submitted a new booking request #20 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:24:28'),
+(127, 5, 'Student Booking Cancelled', 'student cancelled booking #20 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:24:56'),
+(128, 12, 'Student Booking Cancelled', 'student cancelled booking #20 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:24:56'),
+(129, 13, 'Student Booking Cancelled', 'student cancelled booking #20 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 1, '2026-06-09 16:24:56'),
+(130, 18, 'Student Booking Cancelled', 'student cancelled booking #20 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:24:56'),
+(131, 19, 'Student Booking Cancelled', 'student cancelled booking #20 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:24:56'),
+(132, 20, 'Student Booking Cancelled', 'student cancelled booking #20 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:24:56'),
+(133, 21, 'Student Booking Cancelled', 'student cancelled booking #20 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:24:56'),
+(134, 5, 'New Booking Request', 'student submitted a new booking request #21 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:25:29'),
+(135, 12, 'New Booking Request', 'student submitted a new booking request #21 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:25:29'),
+(136, 13, 'New Booking Request', 'student submitted a new booking request #21 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 1, '2026-06-09 16:25:29'),
+(137, 18, 'New Booking Request', 'student submitted a new booking request #21 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:25:29'),
+(138, 19, 'New Booking Request', 'student submitted a new booking request #21 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:25:29'),
+(139, 20, 'New Booking Request', 'student submitted a new booking request #21 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:25:29'),
+(140, 21, 'New Booking Request', 'student submitted a new booking request #21 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:25:29'),
+(141, 5, 'Student Booking Cancelled', 'student cancelled booking #21 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:26:40'),
+(142, 12, 'Student Booking Cancelled', 'student cancelled booking #21 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:26:40'),
+(143, 13, 'Student Booking Cancelled', 'student cancelled booking #21 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 1, '2026-06-09 16:26:40'),
+(144, 18, 'Student Booking Cancelled', 'student cancelled booking #21 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:26:40'),
+(145, 19, 'Student Booking Cancelled', 'student cancelled booking #21 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:26:40'),
+(146, 20, 'Student Booking Cancelled', 'student cancelled booking #21 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:26:40'),
+(147, 21, 'Student Booking Cancelled', 'student cancelled booking #21 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:26:40'),
+(148, 5, 'New Booking Request', 'student submitted a new booking request #22 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:26:54'),
+(149, 12, 'New Booking Request', 'student submitted a new booking request #22 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:26:54'),
+(150, 13, 'New Booking Request', 'student submitted a new booking request #22 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 1, '2026-06-09 16:26:54'),
+(151, 18, 'New Booking Request', 'student submitted a new booking request #22 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:26:54'),
+(152, 19, 'New Booking Request', 'student submitted a new booking request #22 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:26:54'),
+(153, 20, 'New Booking Request', 'student submitted a new booking request #22 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:26:54'),
+(154, 21, 'New Booking Request', 'student submitted a new booking request #22 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:26:54'),
+(155, 5, 'Student Booking Cancelled', 'student cancelled booking #22 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:28:37'),
+(156, 12, 'Student Booking Cancelled', 'student cancelled booking #22 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:28:37'),
+(157, 13, 'Student Booking Cancelled', 'student cancelled booking #22 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 1, '2026-06-09 16:28:37'),
+(158, 18, 'Student Booking Cancelled', 'student cancelled booking #22 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:28:37'),
+(159, 19, 'Student Booking Cancelled', 'student cancelled booking #22 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:28:37'),
+(160, 20, 'Student Booking Cancelled', 'student cancelled booking #22 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:28:37'),
+(161, 21, 'Student Booking Cancelled', 'student cancelled booking #22 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-09 16:28:37'),
+(162, 5, 'New Booking Request', 'student submitted a new booking request #23 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-10 07:13:24'),
+(163, 12, 'New Booking Request', 'student submitted a new booking request #23 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-10 07:13:24'),
+(164, 13, 'New Booking Request', 'student submitted a new booking request #23 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 1, '2026-06-10 07:13:24'),
+(165, 18, 'New Booking Request', 'student submitted a new booking request #23 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-10 07:13:24'),
+(166, 19, 'New Booking Request', 'student submitted a new booking request #23 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-10 07:13:24'),
+(167, 20, 'New Booking Request', 'student submitted a new booking request #23 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-10 07:13:24'),
+(168, 21, 'New Booking Request', 'student submitted a new booking request #23 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-10 07:13:24'),
+(169, 5, 'Student Booking Cancelled', 'student cancelled booking #23 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-10 07:15:29'),
+(170, 12, 'Student Booking Cancelled', 'student cancelled booking #23 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-10 07:15:29'),
+(171, 13, 'Student Booking Cancelled', 'student cancelled booking #23 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 1, '2026-06-10 07:15:29'),
+(172, 18, 'Student Booking Cancelled', 'student cancelled booking #23 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-10 07:15:29'),
+(173, 19, 'Student Booking Cancelled', 'student cancelled booking #23 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-10 07:15:29'),
+(174, 20, 'Student Booking Cancelled', 'student cancelled booking #23 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-10 07:15:29'),
+(175, 21, 'Student Booking Cancelled', 'student cancelled booking #23 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-10 07:15:29'),
+(176, 5, 'New Booking Request', 'student submitted a new booking request #24 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-10 07:17:57'),
+(177, 12, 'New Booking Request', 'student submitted a new booking request #24 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-10 07:17:57'),
+(178, 13, 'New Booking Request', 'student submitted a new booking request #24 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 1, '2026-06-10 07:17:57'),
+(179, 18, 'New Booking Request', 'student submitted a new booking request #24 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-10 07:17:57'),
+(180, 19, 'New Booking Request', 'student submitted a new booking request #24 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-10 07:17:57'),
+(181, 20, 'New Booking Request', 'student submitted a new booking request #24 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-10 07:17:57'),
+(182, 21, 'New Booking Request', 'student submitted a new booking request #24 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-10 07:17:57'),
+(183, 5, 'New Booking Request', 'student submitted a new booking request #25 for Badminton Court on 2026-06-10 (09:00 - 10:00).', 0, '2026-06-10 07:25:17'),
+(184, 12, 'New Booking Request', 'student submitted a new booking request #25 for Badminton Court on 2026-06-10 (09:00 - 10:00).', 0, '2026-06-10 07:25:17'),
+(185, 13, 'New Booking Request', 'student submitted a new booking request #25 for Badminton Court on 2026-06-10 (09:00 - 10:00).', 1, '2026-06-10 07:25:17'),
+(186, 18, 'New Booking Request', 'student submitted a new booking request #25 for Badminton Court on 2026-06-10 (09:00 - 10:00).', 0, '2026-06-10 07:25:17'),
+(187, 19, 'New Booking Request', 'student submitted a new booking request #25 for Badminton Court on 2026-06-10 (09:00 - 10:00).', 0, '2026-06-10 07:25:17'),
+(188, 20, 'New Booking Request', 'student submitted a new booking request #25 for Badminton Court on 2026-06-10 (09:00 - 10:00).', 0, '2026-06-10 07:25:17'),
+(189, 21, 'New Booking Request', 'student submitted a new booking request #25 for Badminton Court on 2026-06-10 (09:00 - 10:00).', 0, '2026-06-10 07:25:17'),
+(190, 5, 'Student Booking Cancelled', 'student cancelled booking #25 for Badminton Court on 2026-06-10 (09:00 - 10:00).', 0, '2026-06-10 07:26:08'),
+(191, 12, 'Student Booking Cancelled', 'student cancelled booking #25 for Badminton Court on 2026-06-10 (09:00 - 10:00).', 0, '2026-06-10 07:26:08'),
+(192, 13, 'Student Booking Cancelled', 'student cancelled booking #25 for Badminton Court on 2026-06-10 (09:00 - 10:00).', 1, '2026-06-10 07:26:08'),
+(193, 18, 'Student Booking Cancelled', 'student cancelled booking #25 for Badminton Court on 2026-06-10 (09:00 - 10:00).', 0, '2026-06-10 07:26:08'),
+(194, 19, 'Student Booking Cancelled', 'student cancelled booking #25 for Badminton Court on 2026-06-10 (09:00 - 10:00).', 0, '2026-06-10 07:26:08'),
+(195, 20, 'Student Booking Cancelled', 'student cancelled booking #25 for Badminton Court on 2026-06-10 (09:00 - 10:00).', 0, '2026-06-10 07:26:08'),
+(196, 21, 'Student Booking Cancelled', 'student cancelled booking #25 for Badminton Court on 2026-06-10 (09:00 - 10:00).', 0, '2026-06-10 07:26:08'),
+(197, 5, 'Student Booking Cancelled', 'student cancelled booking #24 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-10 07:26:09'),
+(198, 12, 'Student Booking Cancelled', 'student cancelled booking #24 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-10 07:26:09'),
+(199, 13, 'Student Booking Cancelled', 'student cancelled booking #24 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 1, '2026-06-10 07:26:09'),
+(200, 18, 'Student Booking Cancelled', 'student cancelled booking #24 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-10 07:26:09'),
+(201, 19, 'Student Booking Cancelled', 'student cancelled booking #24 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-10 07:26:09'),
+(202, 20, 'Student Booking Cancelled', 'student cancelled booking #24 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-10 07:26:09'),
+(203, 21, 'Student Booking Cancelled', 'student cancelled booking #24 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-10 07:26:09'),
+(204, 5, 'New Booking Request', 'student submitted a new booking request #26 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-10 07:26:19'),
+(205, 12, 'New Booking Request', 'student submitted a new booking request #26 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-10 07:26:19'),
+(206, 13, 'New Booking Request', 'student submitted a new booking request #26 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 1, '2026-06-10 07:26:19'),
+(207, 18, 'New Booking Request', 'student submitted a new booking request #26 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-10 07:26:19'),
+(208, 19, 'New Booking Request', 'student submitted a new booking request #26 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-10 07:26:19'),
+(209, 20, 'New Booking Request', 'student submitted a new booking request #26 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-10 07:26:19'),
+(210, 21, 'New Booking Request', 'student submitted a new booking request #26 for Badminton Court on 2026-06-10 (08:00 - 09:00).', 0, '2026-06-10 07:26:19');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `refunds`
+--
+
+CREATE TABLE `refunds` (
+  `refund_id` int(11) NOT NULL,
+  `booking_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `refund_amount` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `refund_reason` varchar(255) NOT NULL DEFAULT '',
+  `refund_status` enum('pending','completed','rejected') NOT NULL DEFAULT 'pending',
+  `admin_remarks` text DEFAULT NULL,
+  `approved_by` int(11) DEFAULT NULL,
+  `approved_at` datetime DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `refunds`
+--
+
+INSERT INTO `refunds` (`refund_id`, `booking_id`, `user_id`, `refund_amount`, `refund_reason`, `refund_status`, `admin_remarks`, `approved_by`, `approved_at`, `created_at`) VALUES
+(1, 5, 11, 5.00, 'Booking cancelled by student', 'pending', NULL, NULL, NULL, '2026-06-10 18:58:27'),
+(2, 9, 11, 5.00, 'Booking cancelled by student', 'pending', NULL, NULL, NULL, '2026-06-10 18:58:27'),
+(3, 10, 11, 8.00, '1234', 'pending', NULL, NULL, NULL, '2026-06-10 18:58:27');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `refund_audit_log`
+--
+
+CREATE TABLE `refund_audit_log` (
+  `id` int(11) NOT NULL,
+  `admin_id` int(11) NOT NULL,
+  `refund_id` int(11) NOT NULL,
+  `action_taken` varchar(50) NOT NULL,
+  `details` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -395,7 +573,8 @@ CREATE TABLE `wallet_topups` (
 --
 
 INSERT INTO `wallet_topups` (`id`, `user_id`, `amount`, `payment_status`, `bill_code`, `transaction_id`, `paid_at`, `created_at`) VALUES
-(1, 11, 5.00, 'pending', '2n33sru4', NULL, NULL, '2026-06-09 12:57:50');
+(1, 11, 5.00, 'pending', '2n33sru4', NULL, NULL, '2026-06-09 12:57:50'),
+(2, 11, 1.00, 'pending', 'xx1boryp', NULL, NULL, '2026-06-09 16:21:17');
 
 -- --------------------------------------------------------
 
@@ -406,7 +585,7 @@ INSERT INTO `wallet_topups` (`id`, `user_id`, `amount`, `payment_status`, `bill_
 CREATE TABLE `wallet_transactions` (
   `id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
-  `txn_type` enum('topup','payment') NOT NULL,
+  `txn_type` enum('topup','payment','refund') NOT NULL,
   `amount` decimal(10,2) NOT NULL,
   `balance_after` decimal(10,2) NOT NULL,
   `description` varchar(255) NOT NULL,
@@ -481,6 +660,24 @@ ALTER TABLE `notifications`
   ADD KEY `idx_user_created` (`user_id`,`created_at`);
 
 --
+-- Indexes for table `refunds`
+--
+ALTER TABLE `refunds`
+  ADD PRIMARY KEY (`refund_id`),
+  ADD UNIQUE KEY `uniq_refunds_booking` (`booking_id`),
+  ADD KEY `idx_refunds_status` (`refund_status`),
+  ADD KEY `idx_refunds_user` (`user_id`),
+  ADD KEY `refunds_admin_fk` (`approved_by`);
+
+--
+-- Indexes for table `refund_audit_log`
+--
+ALTER TABLE `refund_audit_log`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_refund_audit_refund` (`refund_id`),
+  ADD KEY `idx_refund_audit_admin` (`admin_id`);
+
+--
 -- Indexes for table `snooker_room`
 --
 ALTER TABLE `snooker_room`
@@ -540,7 +737,7 @@ ALTER TABLE `basketball_court`
 -- AUTO_INCREMENT for table `bookings`
 --
 ALTER TABLE `bookings`
-  MODIFY `booking_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `booking_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
 
 --
 -- AUTO_INCREMENT for table `facilities`
@@ -558,7 +755,19 @@ ALTER TABLE `futsal_court`
 -- AUTO_INCREMENT for table `notifications`
 --
 ALTER TABLE `notifications`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=85;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=211;
+
+--
+-- AUTO_INCREMENT for table `refunds`
+--
+ALTER TABLE `refunds`
+  MODIFY `refund_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- AUTO_INCREMENT for table `refund_audit_log`
+--
+ALTER TABLE `refund_audit_log`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `snooker_room`
@@ -588,7 +797,7 @@ ALTER TABLE `volleyball_court`
 -- AUTO_INCREMENT for table `wallet_topups`
 --
 ALTER TABLE `wallet_topups`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `wallet_transactions`
@@ -605,6 +814,21 @@ ALTER TABLE `wallet_transactions`
 --
 ALTER TABLE `notifications`
   ADD CONSTRAINT `notifications_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `refunds`
+--
+ALTER TABLE `refunds`
+  ADD CONSTRAINT `refunds_admin_fk` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `refunds_booking_fk` FOREIGN KEY (`booking_id`) REFERENCES `bookings` (`booking_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `refunds_user_fk` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `refund_audit_log`
+--
+ALTER TABLE `refund_audit_log`
+  ADD CONSTRAINT `refund_audit_admin_fk` FOREIGN KEY (`admin_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `refund_audit_refund_fk` FOREIGN KEY (`refund_id`) REFERENCES `refunds` (`refund_id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `wallet_topups`
